@@ -83,7 +83,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun TZVPNTheme(
     darkMode: DarkMode = DarkMode.SYSTEM,
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val darkTheme = when (darkMode) {
