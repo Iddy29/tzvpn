@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [ProfileEntity::class, ChainEntity::class],
-    version = 42,
+    version = 43,
     exportSchema = true
 )
 abstract class TZVPNDatabase : RoomDatabase() {
@@ -626,6 +626,21 @@ abstract class TZVPNDatabase : RoomDatabase() {
                 """.trimIndent())
                 db.execSQL("DROP TABLE server_profiles")
                 db.execSQL("ALTER TABLE server_profiles_new RENAME TO server_profiles")
+            }
+        }
+
+        val MIGRATION_42_43 = object : Migration(42, 43) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // VLESS over REALITY
+                db.execSQL("ALTER TABLE server_profiles ADD COLUMN vless_reality_pub_key TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE server_profiles ADD COLUMN vless_reality_short_id TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE server_profiles ADD COLUMN vless_reality_fp TEXT NOT NULL DEFAULT 'chrome'")
+                // Hysteria2
+                db.execSQL("ALTER TABLE server_profiles ADD COLUMN hy2_password TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE server_profiles ADD COLUMN hy2_sni TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE server_profiles ADD COLUMN hy2_insecure INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE server_profiles ADD COLUMN hy2_obfs TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE server_profiles ADD COLUMN hy2_obfs_password TEXT NOT NULL DEFAULT ''")
             }
         }
 

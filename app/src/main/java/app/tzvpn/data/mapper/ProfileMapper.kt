@@ -112,7 +112,15 @@ class ProfileMapper @Inject constructor(
             chPaddingEnabled = entity.chPaddingEnabled,
             wsHeaderObfuscation = entity.wsHeaderObfuscation,
             wsPaddingEnabled = entity.wsPaddingEnabled,
-            dnsAutoTune = entity.dnsAutoTune
+            dnsAutoTune = entity.dnsAutoTune,
+            vlessRealityPubKey = entity.vlessRealityPubKey,
+            vlessRealityShortId = entity.vlessRealityShortId,
+            vlessRealityFp = entity.vlessRealityFp,
+            hy2Password = entity.hy2Password,
+            hy2Sni = entity.hy2Sni,
+            hy2Insecure = entity.hy2Insecure,
+            hy2Obfs = entity.hy2Obfs,
+            hy2ObfsPassword = entity.hy2ObfsPassword
         )
     }
 
@@ -202,7 +210,15 @@ class ProfileMapper @Inject constructor(
             chPaddingEnabled = profile.chPaddingEnabled,
             wsHeaderObfuscation = profile.wsHeaderObfuscation,
             wsPaddingEnabled = profile.wsPaddingEnabled,
-            dnsAutoTune = profile.dnsAutoTune
+            dnsAutoTune = profile.dnsAutoTune,
+            vlessRealityPubKey = profile.vlessRealityPubKey,
+            vlessRealityShortId = profile.vlessRealityShortId,
+            vlessRealityFp = profile.vlessRealityFp,
+            hy2Password = profile.hy2Password,
+            hy2Sni = profile.hy2Sni,
+            hy2Insecure = profile.hy2Insecure,
+            hy2Obfs = profile.hy2Obfs,
+            hy2ObfsPassword = profile.hy2ObfsPassword
         )
     }
 

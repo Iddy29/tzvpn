@@ -264,5 +264,31 @@ data class ProfileEntity(
     // When true, the DNS query length (and, for VayDNS, the rate limit) are
     // probed at connect time instead of read from the user-set fields.
     @ColumnInfo(name = "dns_auto_tune", defaultValue = "0")
-    val dnsAutoTune: Boolean = false
+    val dnsAutoTune: Boolean = false,
+
+    // VLESS over REALITY
+    @ColumnInfo(name = "vless_reality_pub_key", defaultValue = "")
+    val vlessRealityPubKey: String = "",
+
+    @ColumnInfo(name = "vless_reality_short_id", defaultValue = "")
+    val vlessRealityShortId: String = "",
+
+    @ColumnInfo(name = "vless_reality_fp", defaultValue = "chrome")
+    val vlessRealityFp: String = "chrome",
+
+    // Hysteria2
+    @ColumnInfo(name = "hy2_password", defaultValue = "")
+    val hy2Password: String = "",
+
+    @ColumnInfo(name = "hy2_sni", defaultValue = "")
+    val hy2Sni: String = "",
+
+    @ColumnInfo(name = "hy2_insecure", defaultValue = "0")
+    val hy2Insecure: Boolean = false,
+
+    @ColumnInfo(name = "hy2_obfs", defaultValue = "")
+    val hy2Obfs: String = "",
+
+    @ColumnInfo(name = "hy2_obfs_password", defaultValue = "")
+    val hy2ObfsPassword: String = ""
 )

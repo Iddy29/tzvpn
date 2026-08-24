@@ -55,7 +55,7 @@ data class DohTestResult(
 enum class DohTestScope { ALL, PRESETS, CUSTOM }
 
 /**
- * UI-only bridge type selector. Not persisted — the actual bridge lines are stored
+ * UI-only bridge type selector. Not persisted â€” the actual bridge lines are stored
  * in torBridgeLines and transport is auto-detected at runtime.
  */
 enum class TorBridgeType(val displayName: String) {
@@ -68,7 +68,7 @@ enum class TorBridgeType(val displayName: String) {
     CUSTOM("Custom")
 }
 
-/** SSH transport mode — mutually exclusive. Only shown for SSH-only tunnel type. */
+/** SSH transport mode â€” mutually exclusive. Only shown for SSH-only tunnel type. */
 enum class SshTransport(val displayName: String) {
     DIRECT("Direct"),
     HTTP_PROXY("HTTP Proxy"),
@@ -79,7 +79,7 @@ data class EditProfileUiState(
     val profileId: Long? = null,
     val name: String = "",
     val domain: String = "",
-    val resolvers: String = "", // Format: "host:port,host:port" — auto-filled from system DNS
+    val resolvers: String = "", // Format: "host:port,host:port" â€” auto-filled from system DNS
     val authoritativeMode: Boolean = false,
     val keepAliveInterval: String = "5000",
     val congestionControl: CongestionControl = CongestionControl.BBR,
@@ -220,6 +220,18 @@ data class EditProfileUiState(
     val chPaddingEnabled: Boolean = false,
     val wsHeaderObfuscation: Boolean = true,
     val wsPaddingEnabled: Boolean = false,
+    // VLESS over REALITY
+    val vlessRealityPubKey: String = "",
+    val vlessRealityPubKeyError: String? = null,
+    val vlessRealityShortId: String = "",
+    val vlessRealityFp: String = "chrome",
+    // Hysteria2
+    val hy2Password: String = "",
+    val hy2PasswordError: String? = null,
+    val hy2Sni: String = "",
+    val hy2Insecure: Boolean = false,
+    val hy2Obfs: String = "",
+    val hy2ObfsPassword: String = "",
 ) {
     val useSsh: Boolean
         get() = tunnelType == TunnelType.SSH || tunnelType == TunnelType.DNSTT_SSH || tunnelType == TunnelType.SLIPSTREAM_SSH || tunnelType == TunnelType.NAIVE_SSH || tunnelType == TunnelType.NOIZDNS_SSH || tunnelType == TunnelType.VAYDNS_SSH
@@ -266,8 +278,11 @@ data class EditProfileUiState(
     val isVless: Boolean
         get() = tunnelType == TunnelType.VLESS
 
+    val isHysteria2: Boolean
+        get() = tunnelType == TunnelType.HYSTERIA2
+
     val showConnectionMethod: Boolean
-        get() = !isSshOnly && !isDoh && !isSnowflake && !isSocks5 && !isVless
+        get() = !isSshOnly && !isDoh && !isSnowflake && !isSocks5 && !isVless && !isHysteria2
 }
 
 @HiltViewModel
@@ -432,6 +447,14 @@ class EditProfileViewModel @Inject constructor(
                     chPaddingEnabled = profile.chPaddingEnabled,
                     wsHeaderObfuscation = profile.wsHeaderObfuscation,
                     wsPaddingEnabled = profile.wsPaddingEnabled,
+                    vlessRealityPubKey = profile.vlessRealityPubKey,
+                    vlessRealityShortId = profile.vlessRealityShortId,
+                    vlessRealityFp = profile.vlessRealityFp,
+                    hy2Password = profile.hy2Password,
+                    hy2Sni = profile.hy2Sni,
+                    hy2Insecure = profile.hy2Insecure,
+                    hy2Obfs = profile.hy2Obfs,
+                    hy2ObfsPassword = profile.hy2ObfsPassword,
                     isLoading = false
                 )
             } else {
@@ -599,7 +622,7 @@ class EditProfileViewModel @Inject constructor(
 
     /**
      * Apply a transport hint from a BOTH-mode scan. Only overrides when the profile's
-     * current transport is UDP or TCP — leaves DoT/DoH selections untouched since the
+     * current transport is UDP or TCP â€” leaves DoT/DoH selections untouched since the
      * scan didn't test them.
      */
     fun applyScanTransportHint(hint: String) {
@@ -687,6 +710,34 @@ class EditProfileViewModel @Inject constructor(
     }
     fun updateWsPaddingEnabled(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(wsPaddingEnabled = enabled)
+    }
+
+    // VLESS REALITY update functions
+    fun updateVlessRealityPubKey(key: String) {
+        _uiState.value = _uiState.value.copy(vlessRealityPubKey = key, vlessRealityPubKeyError = null)
+    }
+    fun updateVlessRealityShortId(sid: String) {
+        _uiState.value = _uiState.value.copy(vlessRealityShortId = sid)
+    }
+    fun updateVlessRealityFp(fp: String) {
+        _uiState.value = _uiState.value.copy(vlessRealityFp = fp)
+    }
+
+    // Hysteria2 update functions
+    fun updateHy2Password(password: String) {
+        _uiState.value = _uiState.value.copy(hy2Password = password, hy2PasswordError = null)
+    }
+    fun updateHy2Sni(sni: String) {
+        _uiState.value = _uiState.value.copy(hy2Sni = sni)
+    }
+    fun updateHy2Insecure(insecure: Boolean) {
+        _uiState.value = _uiState.value.copy(hy2Insecure = insecure)
+    }
+    fun updateHy2Obfs(obfs: String) {
+        _uiState.value = _uiState.value.copy(hy2Obfs = obfs)
+    }
+    fun updateHy2ObfsPassword(password: String) {
+        _uiState.value = _uiState.value.copy(hy2ObfsPassword = password)
     }
 
     fun updateDohUrl(url: String) {
@@ -829,7 +880,7 @@ class EditProfileViewModel @Inject constructor(
                         error = null
                     )
                 } else {
-                    // API unreachable — fall back to Snowflake (uses domain fronting, harder to block)
+                    // API unreachable â€” fall back to Snowflake (uses domain fronting, harder to block)
                     _uiState.value = _uiState.value.copy(
                         isAskingTor = false,
                         torBridgeType = TorBridgeType.SNOWFLAKE,
@@ -839,7 +890,7 @@ class EditProfileViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                // API unreachable — fall back to Snowflake (uses domain fronting, harder to block)
+                // API unreachable â€” fall back to Snowflake (uses domain fronting, harder to block)
                 _uiState.value = _uiState.value.copy(
                     isAskingTor = false,
                     torBridgeType = TorBridgeType.SNOWFLAKE,
@@ -1045,7 +1096,7 @@ class EditProfileViewModel @Inject constructor(
      * Parse /circumvention/builtin response.
      * Format: {"obfs4": ["obfs4 ...", ...], "snowflake": ["snowflake ...", ...], "webtunnel": [...]}
      * Takes up to 2 bridges from each type, priority: webtunnel > obfs4 > meek
-     * (snowflake excluded — uses Go library PT, not lyrebird; already available as built-in type)
+     * (snowflake excluded â€” uses Go library PT, not lyrebird; already available as built-in type)
      */
     private fun executeBuiltinRequest(client: OkHttpClient, request: Request): List<String> {
         client.newCall(request).execute().use { response ->
@@ -1119,7 +1170,7 @@ class EditProfileViewModel @Inject constructor(
             val client = DohBridge.createHttpClient()
             val completed = java.util.concurrent.ConcurrentHashMap<String, DohTestResult>()
 
-            // Launch all tests in parallel — results stream in as each completes
+            // Launch all tests in parallel â€” results stream in as each completes
             val jobs = allServers.map { preset ->
                 launch(Dispatchers.IO) {
                     val result = testSingleDohServer(preset, client)
@@ -1274,7 +1325,7 @@ class EditProfileViewModel @Inject constructor(
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return null
         val linkProperties = connectivityManager.getLinkProperties(network) ?: return null
-        // Pick the first IPv4 DNS server — IPv6 resolvers are not supported
+        // Pick the first IPv4 DNS server â€” IPv6 resolvers are not supported
         return linkProperties.dnsServers
             .firstOrNull { it is java.net.Inet4Address }
             ?.hostAddress
@@ -1311,7 +1362,7 @@ class EditProfileViewModel @Inject constructor(
             hasError = true
         }
 
-        val skipDomain = state.tunnelType == TunnelType.DOH || state.tunnelType == TunnelType.SNOWFLAKE || state.isVless
+        val skipDomain = state.tunnelType == TunnelType.DOH || state.tunnelType == TunnelType.SNOWFLAKE || state.isVless || state.isHysteria2
         if (!skipDomain && state.domain.isBlank()) {
             _uiState.value = _uiState.value.copy(domainError = "Domain is required")
             hasError = true
@@ -1336,10 +1387,10 @@ class EditProfileViewModel @Inject constructor(
             }
         }
 
-        // Resolver validation — skip when saving for scanner since the whole point
+        // Resolver validation â€” skip when saving for scanner since the whole point
         // is to find resolvers. Also skip for tunnel types that don't need resolvers.
         val skipResolvers = forScanner || state.tunnelType == TunnelType.SSH || state.tunnelType == TunnelType.DOH ||
-                state.tunnelType == TunnelType.SNOWFLAKE || state.isNaiveBased || state.isSocks5 || state.isVless ||
+                state.tunnelType == TunnelType.SNOWFLAKE || state.isNaiveBased || state.isSocks5 || state.isVless || state.isHysteria2 ||
                 (state.isDnsttOrNoizOrVaydnsBased && state.dnsTransport == DnsTransport.DOH) ||
                 (state.resolversHidden && !state.useCustomResolver)
         if (!skipResolvers) {
@@ -1400,6 +1451,18 @@ class EditProfileViewModel @Inject constructor(
             val cdnPort = state.cdnPort.toIntOrNull()
             if (cdnPort == null || cdnPort !in 1..65535) {
                 _uiState.value = _uiState.value.copy(cdnPortError = "Port must be between 1 and 65535")
+                hasError = true
+            }
+            if (state.vlessSecurity == "reality" && state.vlessRealityPubKey.isBlank()) {
+                _uiState.value = _uiState.value.copy(vlessRealityPubKeyError = "REALITY public key is required")
+                hasError = true
+            }
+        }
+
+        // Hysteria2 validation
+        if (state.isHysteria2) {
+            if (state.hy2Password.isBlank()) {
+                _uiState.value = _uiState.value.copy(hy2PasswordError = "Password is required")
                 hasError = true
             }
         }
@@ -1566,7 +1629,15 @@ class EditProfileViewModel @Inject constructor(
                     vlessSni = if (state.isVless) state.vlessSni.trim() else "",
                     chPaddingEnabled = if (state.isVless) state.chPaddingEnabled else false,
                     wsHeaderObfuscation = if (state.isVless) state.wsHeaderObfuscation else false,
-                    wsPaddingEnabled = if (state.isVless) state.wsPaddingEnabled else false
+                    wsPaddingEnabled = if (state.isVless) state.wsPaddingEnabled else false,
+                    vlessRealityPubKey = if (state.isVless && state.vlessSecurity == "reality") state.vlessRealityPubKey.trim() else "",
+                    vlessRealityShortId = if (state.isVless && state.vlessSecurity == "reality") state.vlessRealityShortId.trim() else "",
+                    vlessRealityFp = if (state.isVless && state.vlessSecurity == "reality") state.vlessRealityFp.trim().ifBlank { "chrome" } else "chrome",
+                    hy2Password = if (state.isHysteria2) state.hy2Password else "",
+                    hy2Sni = if (state.isHysteria2) state.hy2Sni.trim() else "",
+                    hy2Insecure = if (state.isHysteria2) state.hy2Insecure else false,
+                    hy2Obfs = if (state.isHysteria2) state.hy2Obfs else "",
+                    hy2ObfsPassword = if (state.isHysteria2) state.hy2ObfsPassword else ""
                 )
 
                 val savedId = saveProfileUseCase(profile)
@@ -1638,7 +1709,7 @@ class EditProfileViewModel @Inject constructor(
             val port = trimmed.substring(lastColon + 1).trim().toIntOrNull() ?: 53
             return host to port
         }
-        // Bare host (no port) — could be IPv6 without brackets
+        // Bare host (no port) â€” could be IPv6 without brackets
         return trimmed to 53
     }
 
@@ -1653,7 +1724,7 @@ class EditProfileViewModel @Inject constructor(
                 tunnelType == TunnelType.NOIZDNS || tunnelType == TunnelType.NOIZDNS_SSH ||
                 tunnelType == TunnelType.SLIPSTREAM || tunnelType == TunnelType.SLIPSTREAM_SSH
 
-        // SSH accepts hostnames and IPs — no DNS domain validation needed
+        // SSH accepts hostnames and IPs â€” no DNS domain validation needed
         if (!isDnsTunnel) return null
 
         // Must not be an IP address
@@ -1753,7 +1824,7 @@ class EditProfileViewModel @Inject constructor(
             obfs4 212.83.43.74:443 39562501228A4D5E27FCA4C0C81A01EE23AE3EE4 cert=PBwr+S8JTVZo6MPdHnkTwXJPILWADLqfMGoVvhZClMq/Urndyd42BwX9YFJHZnBB3H0XCw iat-mode=1
         """.trimIndent()
 
-        // Built-in meek_lite bridge (CDN77 domain fronting, from Tor Browser defaults — Bug 41508)
+        // Built-in meek_lite bridge (CDN77 domain fronting, from Tor Browser defaults â€” Bug 41508)
         const val DEFAULT_MEEK_BRIDGE = "meek_lite 192.0.2.20:80 url=https://1603026938.rsc.cdn77.org front=www.phpmyadmin.net utls=HelloRandomizedALPN"
 
         /**
@@ -1781,7 +1852,7 @@ class EditProfileViewModel @Inject constructor(
             return "Resolver cannot be empty"
         }
 
-        // Block IPv6 — not supported by the tunnel stack
+        // Block IPv6 â€” not supported by the tunnel stack
         if (trimmed.startsWith("[") || trimmed.count { it == ':' } > 1) {
             return "IPv6 resolvers are not supported"
         }
@@ -1914,7 +1985,7 @@ class EditProfileViewModel @Inject constructor(
             onResult(false)
             return
         }
-        // Correct password — unlock permanently
+        // Correct password â€” unlock permanently
         viewModelScope.launch {
             val profileId = state.profileId ?: return@launch
             val profile = getProfileByIdUseCase(profileId) ?: return@launch

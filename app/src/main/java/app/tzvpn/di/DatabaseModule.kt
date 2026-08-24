@@ -63,7 +63,8 @@ object DatabaseModule {
                 TZVPNDatabase.MIGRATION_38_39,
                 TZVPNDatabase.MIGRATION_39_40,
                 TZVPNDatabase.MIGRATION_40_41,
-                TZVPNDatabase.MIGRATION_41_42
+                TZVPNDatabase.MIGRATION_41_42,
+            TZVPNDatabase.MIGRATION_42_43
             )
             .fallbackToDestructiveMigrationFrom(1, 2, 3, 4)
             .fallbackToDestructiveMigrationOnDowngrade()

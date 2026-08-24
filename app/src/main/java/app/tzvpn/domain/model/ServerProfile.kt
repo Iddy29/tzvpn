@@ -160,7 +160,18 @@ data class ServerProfile(
     // When true, probe the resolver at connect time and pick DNS query length
     // (and, for VayDNS, the rate limit) automatically — overrides the manual
     // dnsPayloadSize / vaydnsMaxQnameLen / vaydnsRps values for that connect.
-    val dnsAutoTune: Boolean = false
+    val dnsAutoTune: Boolean = false,
+    // VLESS over REALITY (xtls REALITY protocol). When vlessSecurity == "reality",
+    // the connection uses the VlessRealityBridge (Go) instead of the CDN/WS bridge.
+    val vlessRealityPubKey: String = "",
+    val vlessRealityShortId: String = "",
+    val vlessRealityFp: String = "chrome",
+    // Hysteria2 (QUIC-based proxy, optional Salamander obfuscation)
+    val hy2Password: String = "",
+    val hy2Sni: String = "",
+    val hy2Insecure: Boolean = false,
+    val hy2Obfs: String = "",
+    val hy2ObfsPassword: String = ""
 ) {
     val isExpired: Boolean get() = expirationDate > 0 && System.currentTimeMillis() > expirationDate
 }
@@ -197,7 +208,8 @@ enum class TunnelType(val value: String, val displayName: String) {
     SOCKS5("socks5", "SOCKS5 Proxy"),
     VAYDNS("vaydns", "VayDNS"),
     VAYDNS_SSH("vaydns_ssh", "VayDNS + SSH"),
-    VLESS("vless", "VLESS");
+    VLESS("vless", "VLESS"),
+    HYSTERIA2("hysteria2", "Hysteria2");
 
     companion object {
         fun fromValue(value: String): TunnelType {

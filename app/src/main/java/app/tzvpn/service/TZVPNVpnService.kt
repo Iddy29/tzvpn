@@ -100,11 +100,11 @@ class TZVPNVpnService : VpnService() {
         // Seamless reconnect: try restarting just the proxy (keeping TUN + tun2socks alive)
         // before escalating to kill-switch / auto-reconnect / stop.
         private const val MAX_SEAMLESS_RECONNECTS = 3
-        private const val MAX_SEAMLESS_RECONNECTS_DNSTT = 4 // DNSTT is slower — give it more attempts
+        private const val MAX_SEAMLESS_RECONNECTS_DNSTT = 4 // DNSTT is slower â€” give it more attempts
         private val SEAMLESS_RECONNECT_DELAYS_MS = longArrayOf(1000, 3000, 5000, 8000)
 
-        // Boot retry settings (exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s, 30s, …)
-        // 10 retries ≈ 3 minutes total before giving up
+        // Boot retry settings (exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s, 30s, â€¦)
+        // 10 retries â‰ˆ 3 minutes total before giving up
         private const val BOOT_RETRY_INITIAL_DELAY_MS = 1000L
         private const val BOOT_RETRY_MAX_DELAY_MS = 30_000L
         private const val BOOT_RETRY_MAX_ATTEMPTS = 10
@@ -307,7 +307,7 @@ class TZVPNVpnService : VpnService() {
             try {
                 withTimeout(5000) { disconnectJob?.join() }
             } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
-                Log.w(TAG, "Timed out waiting for previous disconnect — forcing cleanup")
+                Log.w(TAG, "Timed out waiting for previous disconnect â€” forcing cleanup")
             }
 
             // Always stop previous proxies to ensure ports are freed.
@@ -315,7 +315,7 @@ class TZVPNVpnService : VpnService() {
             // didn't wait for native code to release ports (e.g. abandoned Rust threads).
             withContext(Dispatchers.IO) {
                 try { stopCurrentProxy() } catch (_: Exception) {}
-                // Process-level singletons — a previous service instance may have left
+                // Process-level singletons â€” a previous service instance may have left
                 // listeners alive even though currentTunnelType has been reset.
                 // Stop ALL bridge types to ensure ports are freed.
                 try { HevSocks5Tunnel.stop() } catch (_: Exception) {}
@@ -416,7 +416,7 @@ class TZVPNVpnService : VpnService() {
                 Log.w(TAG, "Battery optimization is enabled - VPN may be interrupted by Doze mode")
             }
 
-            // Check Private DNS mode. Only "hostname" (user-set provider) is dangerous —
+            // Check Private DNS mode. Only "hostname" (user-set provider) is dangerous â€”
             // it forces DoT and bypasses VPN DNS entirely. "opportunistic" is the Android
             // default and falls back to plain DNS through the VPN when the resolver
             // doesn't support DoT (which is most ISP resolvers).
@@ -509,7 +509,7 @@ class TZVPNVpnService : VpnService() {
 
                 // DNSTT+SSH / NoizDNS+SSH: use reliable public DNS by default.
                 // 127.0.0.53 (systemd-resolved) is unavailable on most servers, causing
-                // DNS workers to fail and fall back — adding ~1s latency at startup.
+                // DNS workers to fail and fall back â€” adding ~1s latency at startup.
                 // Only override when user hasn't set a custom remote DNS.
                 if (currentTunnelType == TunnelType.DNSTT_SSH || currentTunnelType == TunnelType.NOIZDNS_SSH || currentTunnelType == TunnelType.VAYDNS_SSH) {
                     val dnsMode = preferencesDataStore.remoteDnsMode.first()
@@ -546,11 +546,12 @@ class TZVPNVpnService : VpnService() {
                     TunnelType.VAYDNS_SSH -> connectVaydnsSsh(profile, dnsServer, remoteDns, remoteDnsFallback, globalResolverOverride)
                     TunnelType.SOCKS5 -> connectSocks5(profile, dnsServer, remoteDns)
                     TunnelType.VLESS -> connectVless(profile, dnsServer)
+                    TunnelType.HYSTERIA2 -> connectHysteria2(profile, dnsServer)
                 }
 
             } catch (e: kotlinx.coroutines.CancellationException) {
                 // Coroutine was cancelled (user disconnected, service stopped, or new connect).
-                // Do NOT treat as an error — let the cancelling code handle cleanup.
+                // Do NOT treat as an error â€” let the cancelling code handle cleanup.
                 Log.d(TAG, "Connection coroutine cancelled")
                 throw e
             } catch (e: Exception) {
@@ -578,7 +579,7 @@ class TZVPNVpnService : VpnService() {
         }
     }
 
-    // ── Chain Connection ──────────────────────────────────────────────
+    // â”€â”€ Chain Connection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private fun connectChain(chainId: Long) {
         stateObserverJob?.cancel()
@@ -589,7 +590,7 @@ class TZVPNVpnService : VpnService() {
             try {
                 withTimeout(5000) { disconnectJob?.join() }
             } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
-                Log.w(TAG, "Timed out waiting for previous disconnect (chain) — forcing cleanup")
+                Log.w(TAG, "Timed out waiting for previous disconnect (chain) â€” forcing cleanup")
             }
             withContext(Dispatchers.IO) {
                 try { stopCurrentProxy() } catch (_: Exception) {}
@@ -853,7 +854,7 @@ class TZVPNVpnService : VpnService() {
 
             // For Snowflake, wait for Tor to finish bootstrapping. Without this,
             // the chain only checks that TorSocksBridge's listener is open, which
-            // happens before Tor has reached any relay — the UI flips to
+            // happens before Tor has reached any relay â€” the UI flips to
             // "Connected" while Tor is still stalled on PT/bridge contact.
             if (profile.tunnelType == TunnelType.SNOWFLAKE) {
                 Log.i(TAG, "Chain layer $i: waiting for Tor to bootstrap...")
@@ -933,7 +934,7 @@ class TZVPNVpnService : VpnService() {
             return
         }
 
-        Log.i(TAG, "Chain started: ${profiles.joinToString(" → ") { it.tunnelType.displayName }}")
+        Log.i(TAG, "Chain started: ${profiles.joinToString(" â†’ ") { it.tunnelType.displayName }}")
         finishConnection()
     }
 
@@ -1173,7 +1174,7 @@ class TZVPNVpnService : VpnService() {
                     }
                 } else null
                 // The built-in Snowflake Go client ignores TOR_PT_PROXY, so chaining
-                // it behind another SOCKS5 layer gives no censorship benefit — the
+                // it behind another SOCKS5 layer gives no censorship benefit â€” the
                 // broker contact still goes direct. Surface this as a hard error
                 // instead of letting Tor stall forever on unreachable brokers.
                 if (upstream != null) {
@@ -1258,7 +1259,11 @@ class TZVPNVpnService : VpnService() {
             }
             TunnelType.DOH -> DohBridge.stop()
             TunnelType.SOCKS5 -> Socks5ProxyBridge.stopAll()
-            TunnelType.VLESS -> VlessBridge.stop()
+            TunnelType.VLESS -> {
+                if (VlessRealityBridge.isRunning()) VlessRealityBridge.stop()
+                VlessBridge.stop()
+            }
+            TunnelType.HYSTERIA2 -> Hysteria2Bridge.stop()
             else -> {}
         }
     }
@@ -1294,7 +1299,7 @@ class TZVPNVpnService : VpnService() {
             return
         }
 
-        // Read actual port — may differ from requested if preferred port was stuck
+        // Read actual port â€” may differ from requested if preferred port was stuck
         val actualSlipstreamPort = SlipstreamBridge.getClientPort()
         if (actualSlipstreamPort != slipstreamPort) {
             Log.i(TAG, "Slipstream bound to alternative port $actualSlipstreamPort (preferred $slipstreamPort was stuck)")
@@ -1389,7 +1394,7 @@ class TZVPNVpnService : VpnService() {
      *
      * Slipstream in SSH mode is a raw TCP tunnel to the SSH server (like DNSTT).
      * The server's --target-address points to SSH port 22, so all tunnel traffic
-     * goes directly to SSH. JSch connects directly to Slipstream's local port —
+     * goes directly to SSH. JSch connects directly to Slipstream's local port â€”
      * no ProxySOCKS5 or Dante needed.
      *
      * VPN interface is established AFTER SSH connects. The SSH connection goes
@@ -1504,7 +1509,7 @@ class TZVPNVpnService : VpnService() {
             return
         }
 
-        // Read actual port — may differ from requested if preferred port was stuck
+        // Read actual port â€” may differ from requested if preferred port was stuck
         val actualSlipstreamPort = SlipstreamBridge.getClientPort()
         if (actualSlipstreamPort != slipstreamPort) {
             Log.i(TAG, "Slipstream bound to alternative port $actualSlipstreamPort (preferred $slipstreamPort was stuck)")
@@ -1516,12 +1521,12 @@ class TZVPNVpnService : VpnService() {
             return
         }
 
-        // Step 2.6: Wait for QUIC handshake — REQUIRED for Slipstream+SSH.
+        // Step 2.6: Wait for QUIC handshake â€” REQUIRED for Slipstream+SSH.
         // SSH needs a working QUIC tunnel before JSch can connect through it.
         // Wait longer than plain Slipstream (30s vs 5s) since this is a hard requirement.
         val quicReady = waitForQuicReady(maxAttempts = 150, delayMs = 200)
         if (!quicReady) {
-            Log.e(TAG, "QUIC connection not ready — cannot establish SSH through Slipstream")
+            Log.e(TAG, "QUIC connection not ready â€” cannot establish SSH through Slipstream")
             connectionManager.onVpnError("Slipstream tunnel failed to connect (QUIC timeout)")
             SlipstreamBridge.stopClient()
             SlipstreamBridge.setVpnService(null)
@@ -1535,7 +1540,7 @@ class TZVPNVpnService : VpnService() {
         currentTunnelType = TunnelType.SLIPSTREAM_SSH
 
         // Step 4: Start SSH tunnel directly through Slipstream (with retry)
-        // Slipstream in SSH mode is a raw TCP tunnel (like DNSTT) — the server's
+        // Slipstream in SSH mode is a raw TCP tunnel (like DNSTT) â€” the server's
         // --target-address forwards all traffic to SSH. JSch connects directly to
         // Slipstream's local port, no SOCKS5 proxy wrapper needed.
         configureSshBridge()
@@ -1595,7 +1600,7 @@ class TZVPNVpnService : VpnService() {
             return
         }
 
-        // Step 5: Establish VPN interface (with addDisallowedApplication — needed for geo-bypass
+        // Step 5: Establish VPN interface (with addDisallowedApplication â€” needed for geo-bypass
         // direct sockets; Slipstream QUIC sockets are also protected via JNI)
         // Done after SSH is connected to avoid disrupting QUIC during startup
         vpnInterface = establishVpnInterface(dnsServer)
@@ -1677,7 +1682,7 @@ class TZVPNVpnService : VpnService() {
             return
         }
 
-        // Read actual port — may differ from requested if preferred port was stuck
+        // Read actual port â€” may differ from requested if preferred port was stuck
         val actualDnsttPort = DnsttBridge.getClientPort()
         if (actualDnsttPort != dnsttPort) {
             Log.i(TAG, "DNSTT bound to alternative port $actualDnsttPort (preferred $dnsttPort was stuck)")
@@ -1770,7 +1775,7 @@ class TZVPNVpnService : VpnService() {
         val resolvedProfile = if (globalDnsIp != null && !DomainRouter.isIpAddress(profile.domain)) {
             val resolvedDomain = VpnRepositoryImpl.resolveHost(profile.domain, globalDnsIp)
             if (resolvedDomain != profile.domain) {
-                Log.i(TAG, "Resolved SSH host ${profile.domain} → $resolvedDomain via global DNS")
+                Log.i(TAG, "Resolved SSH host ${profile.domain} â†’ $resolvedDomain via global DNS")
                 profile.copy(domain = resolvedDomain)
             } else profile
         } else profile
@@ -2373,7 +2378,7 @@ class TZVPNVpnService : VpnService() {
             return
         }
 
-        // Read actual port — may differ from requested if preferred port was stuck
+        // Read actual port â€” may differ from requested if preferred port was stuck
         val actualDnsttPort = DnsttBridge.getClientPort()
         if (actualDnsttPort != dnsttPort) {
             Log.i(TAG, "DNSTT bound to alternative port $actualDnsttPort (preferred $dnsttPort was stuck)")
@@ -2393,7 +2398,7 @@ class TZVPNVpnService : VpnService() {
         currentTunnelType = sshTunnelType
 
         // Step 5: Start SSH tunnel through DNSTT (with retry)
-        // DNSTT is a raw TCP tunnel — JSch connects directly to its local port.
+        // DNSTT is a raw TCP tunnel â€” JSch connects directly to its local port.
         // DNS tunnels can drop the first connection (DPI, packet loss), so retry
         // up to 3 times before giving up.
         configureSshBridge()
@@ -2516,7 +2521,7 @@ class TZVPNVpnService : VpnService() {
             return
         }
 
-        // Read actual port — may differ from requested if preferred port was stuck
+        // Read actual port â€” may differ from requested if preferred port was stuck
         val actualVaydnsPort = VaydnsBridge.getClientPort()
         if (actualVaydnsPort != vaydnsPort) {
             Log.i(TAG, "VayDNS bound to alternative port $actualVaydnsPort (preferred $vaydnsPort was stuck)")
@@ -2629,7 +2634,7 @@ class TZVPNVpnService : VpnService() {
             return
         }
 
-        // Read actual port — may differ from requested if preferred port was stuck
+        // Read actual port â€” may differ from requested if preferred port was stuck
         val actualVaydnsPort = VaydnsBridge.getClientPort()
         if (actualVaydnsPort != vaydnsPort) {
             Log.i(TAG, "VayDNS bound to alternative port $actualVaydnsPort (preferred $vaydnsPort was stuck)")
@@ -2759,7 +2764,7 @@ class TZVPNVpnService : VpnService() {
 
         // Step 1: Establish VPN interface with addDisallowedApplication
         // Use a virtual DNS address so Android can't DoT to a real server.
-        // All DNS goes through FWD_UDP → DohBridge → DoH HTTPS instead.
+        // All DNS goes through FWD_UDP â†’ DohBridge â†’ DoH HTTPS instead.
         vpnInterface = establishVpnInterface("10.255.255.2")
         if (vpnInterface == null) {
             connectionManager.onVpnError("Failed to establish VPN interface")
@@ -2859,7 +2864,7 @@ class TZVPNVpnService : VpnService() {
         }
 
         // Step 1: Start Snowflake proxy stack (Snowflake PT + Tor + TorSocksBridge)
-        // VPN interface is NOT established yet — no VPN key icon during bootstrap
+        // VPN interface is NOT established yet â€” no VPN key icon during bootstrap
         val proxyResult = vpnRepository.startSnowflakeProxy(profile, snowflakePtPort, torSocksPort, proxyPort)
         if (proxyResult.isFailure) {
             connectionManager.onVpnError(proxyResult.exceptionOrNull()?.message ?: "Failed to start Snowflake proxy")
@@ -2915,7 +2920,7 @@ class TZVPNVpnService : VpnService() {
 
     /**
      * Smart Connect: tries multiple Tor transports sequentially until one works.
-     * Transport sequence: Direct → obfs4 → Meek Azure → Snowflake.
+     * Transport sequence: Direct â†’ obfs4 â†’ Meek Azure â†’ Snowflake.
      * On reconnect, SMART profiles fall back to built-in Snowflake (SnowflakeBridge
      * treats "SMART" sentinel as built-in Snowflake).
      */
@@ -3040,6 +3045,12 @@ class TZVPNVpnService : VpnService() {
         val proxyPort = preferencesDataStore.proxyListenPort.first()
         val proxyHost = preferencesDataStore.proxyListenAddress.first()
         vpnRepository.setCurrentTunnelType(app.tzvpn.domain.model.TunnelType.VLESS)
+
+        // REALITY mode: direct TCP with xtls REALITY handshake via the Go bridge
+        if (profile.vlessSecurity == "reality") {
+            connectVlessReality(profile, dnsServer)
+            return
+        }
 
         if (isProxyOnly) {
             VlessBridge.debugLogging = preferencesDataStore.debugLogging.first()
@@ -3179,6 +3190,184 @@ class TZVPNVpnService : VpnService() {
         finishConnection()
     }
 
+    /**
+     * Connect using VLESS over REALITY (raw TCP transport, Go-based bridge).
+     * Traffic flow:
+     * App -> TUN -> hev-socks5-tunnel -> VlessRealityBridge SOCKS5 (proxyPort)
+     *   -> REALITY (uTLS fingerprint + auth key) -> VLESS -> Server
+     */
+    private suspend fun connectVlessReality(profile: app.tzvpn.domain.model.ServerProfile, dnsServer: String) {
+        val proxyPort = preferencesDataStore.proxyListenPort.first()
+        val proxyHost = preferencesDataStore.proxyListenAddress.first()
+        val serverPort = profile.cdnPort
+
+        suspend fun startBridge(): Result<Unit> = withContext(Dispatchers.IO) {
+            VlessRealityBridge.start(
+                listenPort = proxyPort,
+                listenHost = proxyHost,
+                serverHost = profile.cdnIp.ifBlank { profile.domain },
+                serverPort = serverPort,
+                uuid = profile.vlessUuid,
+                sni = profile.vlessSni.ifBlank { profile.domain },
+                publicKey = profile.vlessRealityPubKey,
+                shortId = profile.vlessRealityShortId,
+                fingerprint = profile.vlessRealityFp
+            )
+        }
+
+        if (isProxyOnly) {
+            val bridgeResult = startBridge()
+            if (bridgeResult.isFailure) {
+                connectionManager.onVpnError(bridgeResult.exceptionOrNull()?.message ?: "Failed to start VLESS REALITY bridge")
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return
+            }
+            if (!waitForProxyReady(proxyPort, maxAttempts = 30, delayMs = 100)) {
+                connectionManager.onVpnError("VLESS REALITY bridge failed to start")
+                VlessRealityBridge.stop()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return
+            }
+            vpnRepository.setProxyConnected(profile)
+            Log.i(TAG, "Proxy-only mode: VLESS REALITY bridge ready on $proxyHost:$proxyPort")
+            finishConnection()
+            return
+        }
+
+        vpnInterface = establishVpnInterface(dnsServer)
+        if (vpnInterface == null) {
+            connectionManager.onVpnError("Failed to establish VPN interface")
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
+        delay(200)
+
+        val bridgeResult = startBridge()
+        if (bridgeResult.isFailure) {
+            connectionManager.onVpnError(bridgeResult.exceptionOrNull()?.message ?: "Failed to start VLESS REALITY bridge")
+            vpnInterface?.close()
+            vpnInterface = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
+        if (!waitForProxyReady(proxyPort, maxAttempts = 30, delayMs = 100)) {
+            connectionManager.onVpnError("VLESS REALITY bridge failed to start")
+            VlessRealityBridge.stop()
+            vpnInterface?.close()
+            vpnInterface = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
+
+        val tun2socksResult = vpnRepository.startTun2Socks(profile, vpnInterface!!)
+        if (tun2socksResult.isFailure) {
+            connectionManager.onVpnError(tun2socksResult.exceptionOrNull()?.message ?: "Failed to start tunnel")
+            VlessRealityBridge.stop()
+            vpnInterface?.close()
+            vpnInterface = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
+
+        Log.d(TAG, "VLESS REALITY tunnel started")
+        finishConnection()
+    }
+
+    /**
+     * Connect using Hysteria2 (QUIC-based proxy with optional Salamander obfs,
+     * Go-based bridge). Traffic flow:
+     * App -> TUN -> hev-socks5-tunnel -> Hysteria2Bridge SOCKS5 (proxyPort)
+     *   -> QUIC/Hysteria2 -> Server
+     */
+    private suspend fun connectHysteria2(profile: app.tzvpn.domain.model.ServerProfile, dnsServer: String) {
+        val proxyPort = preferencesDataStore.proxyListenPort.first()
+        val proxyHost = preferencesDataStore.proxyListenAddress.first()
+        vpnRepository.setCurrentTunnelType(app.tzvpn.domain.model.TunnelType.HYSTERIA2)
+
+        suspend fun startBridge(): Result<Unit> = withContext(Dispatchers.IO) {
+            Hysteria2Bridge.start(
+                listenPort = proxyPort,
+                listenHost = proxyHost,
+                serverHost = profile.domain,
+                serverPort = profile.cdnPort,
+                password = profile.hy2Password,
+                sni = profile.hy2Sni.ifBlank { profile.domain },
+                insecure = profile.hy2Insecure,
+                obfs = profile.hy2Obfs,
+                obfsPassword = profile.hy2ObfsPassword
+            )
+        }
+
+        if (isProxyOnly) {
+            val bridgeResult = startBridge()
+            if (bridgeResult.isFailure) {
+                connectionManager.onVpnError(bridgeResult.exceptionOrNull()?.message ?: "Failed to start Hysteria2 bridge")
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return
+            }
+            if (!waitForProxyReady(proxyPort, maxAttempts = 30, delayMs = 100)) {
+                connectionManager.onVpnError("Hysteria2 bridge failed to start")
+                Hysteria2Bridge.stop()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return
+            }
+            vpnRepository.setProxyConnected(profile)
+            Log.i(TAG, "Proxy-only mode: Hysteria2 bridge ready on $proxyHost:$proxyPort")
+            finishConnection()
+            return
+        }
+
+        vpnInterface = establishVpnInterface(dnsServer)
+        if (vpnInterface == null) {
+            connectionManager.onVpnError("Failed to establish VPN interface")
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
+        delay(200)
+
+        val bridgeResult = startBridge()
+        if (bridgeResult.isFailure) {
+            connectionManager.onVpnError(bridgeResult.exceptionOrNull()?.message ?: "Failed to start Hysteria2 bridge")
+            vpnInterface?.close()
+            vpnInterface = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
+        if (!waitForProxyReady(proxyPort, maxAttempts = 30, delayMs = 100)) {
+            connectionManager.onVpnError("Hysteria2 bridge failed to start")
+            Hysteria2Bridge.stop()
+            vpnInterface?.close()
+            vpnInterface = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
+
+        val tun2socksResult = vpnRepository.startTun2Socks(profile, vpnInterface!!)
+        if (tun2socksResult.isFailure) {
+            connectionManager.onVpnError(tun2socksResult.exceptionOrNull()?.message ?: "Failed to start tunnel")
+            Hysteria2Bridge.stop()
+            vpnInterface?.close()
+            vpnInterface = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
+
+        Log.d(TAG, "Hysteria2 tunnel started")
+        finishConnection()
+    }
+
     private suspend fun connectSnowflakeSmart(profile: app.tzvpn.domain.model.ServerProfile, dnsServer: String) {
         val proxyPort = preferencesDataStore.proxyListenPort.first()
         val proxyHost = preferencesDataStore.proxyListenAddress.first()
@@ -3224,7 +3413,7 @@ class TZVPNVpnService : VpnService() {
                 }
             }
 
-            // This transport failed — stop proxy stack and try the next one
+            // This transport failed â€” stop proxy stack and try the next one
             Log.w(TAG, "Smart Connect: ${transport.label} failed (bootstrap: ${SnowflakeBridge.torBootstrapProgress}%)")
             TorSocksBridge.stop()
             SnowflakeBridge.stopClient()
@@ -3307,7 +3496,7 @@ class TZVPNVpnService : VpnService() {
             TunnelType.NAIVE -> NaiveBridge.isRunning()
             TunnelType.SNOWFLAKE -> SnowflakeBridge.isRunning()
             TunnelType.SOCKS5 -> Socks5ProxyBridge.isRunning()
-            TunnelType.VLESS -> VlessBridge.isRunning()
+            TunnelType.VLESS -> (if (VlessRealityBridge.isRunning()) VlessRealityBridge.isRunning() else VlessBridge.isRunning())
         }
         Log.e(TAG, "Proxy failed to become ready on port $port, nativeRunning=$nativeRunning")
 
@@ -3333,7 +3522,7 @@ class TZVPNVpnService : VpnService() {
         vpnRepository.setAutoReconnect(false)
         connectionEstablishedAt = System.currentTimeMillis()
 
-        // Clear boot-triggered state — connection succeeded, normal auto-reconnect takes over
+        // Clear boot-triggered state â€” connection succeeded, normal auto-reconnect takes over
         isBootTriggered = false
         bootRetryAttempt = 0
         bootRetryJob?.cancel()
@@ -3553,7 +3742,7 @@ class TZVPNVpnService : VpnService() {
                             Socks5ProxyBridge.getInstance("chain-socks5-$it")?.isRunning() == true
                         }
                     }
-                    TunnelType.VLESS -> VlessBridge.isRunning()
+                    TunnelType.VLESS -> (if (VlessRealityBridge.isRunning()) VlessRealityBridge.isRunning() else VlessBridge.isRunning())
                 }
 
                 if (!nativeRunning) {
@@ -3693,7 +3882,7 @@ class TZVPNVpnService : VpnService() {
                 if (usesSsh && healthCheckCount % SSH_PROBE_INTERVAL == 0) {
                     val alive = SshTunnelBridge.probeSessionAlive()
                     if (!alive) {
-                        Log.e(TAG, "SSH session probe failed — session is dead")
+                        Log.e(TAG, "SSH session probe failed â€” session is dead")
                         launch(Dispatchers.Main) {
                             handleTunnelFailure("SSH session unresponsive")
                         }
@@ -3741,7 +3930,7 @@ class TZVPNVpnService : VpnService() {
                 val stallCheckInterval = if (isDnsTunneledStall) TUNNEL_STALL_CHECK_INTERVAL else TUNNEL_STALL_CHECK_INTERVAL_SOCKS
                 val stallThreshold = if (isDnsTunneledStall) TUNNEL_STALL_THRESHOLD else TUNNEL_STALL_THRESHOLD_SOCKS
                 // DoH: only DNS is routed (/32), so TX-without-RX is normal during
-                // idle periods — skip stall detection to avoid false positives on TV/idle devices.
+                // idle periods â€” skip stall detection to avoid false positives on TV/idle devices.
                 if (!isProxyOnly && currentTunnelType != TunnelType.DOH && healthCheckCount % stallCheckInterval == 0) {
                     val stats = HevSocks5Tunnel.getStats()
                     if (stats != null) {
@@ -3752,7 +3941,7 @@ class TZVPNVpnService : VpnService() {
                             tunnelStallChecks++
                             Log.w(TAG, "Tunnel stall detected ($tunnelStallChecks/$stallThreshold): tx flowing but no rx")
                             if (tunnelStallChecks >= stallThreshold) {
-                                Log.e(TAG, "Tunnel stalled — data sent but no response for ~${tunnelStallChecks * stallCheckInterval * HEALTH_CHECK_INTERVAL_MS / 1000}s")
+                                Log.e(TAG, "Tunnel stalled â€” data sent but no response for ~${tunnelStallChecks * stallCheckInterval * HEALTH_CHECK_INTERVAL_MS / 1000}s")
                                 tunnelStallChecks = 0
                                 launch(Dispatchers.Main) {
                                     handleTunnelFailure("tunnel not responding")
@@ -3780,7 +3969,7 @@ class TZVPNVpnService : VpnService() {
                     else -> false
                 }
                 if (capacityExhausted) {
-                    Log.e(TAG, "Bridge capacity exhausted — all CONNECT slots stuck, triggering reconnect")
+                    Log.e(TAG, "Bridge capacity exhausted â€” all CONNECT slots stuck, triggering reconnect")
                     launch(Dispatchers.Main) {
                         handleTunnelFailure("bridge capacity exhausted")
                     }
@@ -3794,7 +3983,7 @@ class TZVPNVpnService : VpnService() {
     /**
      * Update the VPN's underlying networks for seamless handover.
      * Tells Android which physical networks the VPN uses, enabling
-     * automatic failover during WiFi↔cellular switches without full reconnection.
+     * automatic failover during WiFiâ†”cellular switches without full reconnection.
      */
     @Suppress("DEPRECATION")
     private fun updateUnderlyingNetworks() {
@@ -3828,7 +4017,7 @@ class TZVPNVpnService : VpnService() {
 
     /**
      * Register a BroadcastReceiver to detect when the device exits Doze mode.
-     * Doze suspends network access — when it lifts, connections may be stale
+     * Doze suspends network access â€” when it lifts, connections may be stale
      * and need immediate refresh.
      */
     private fun registerDozeReceiver() {
@@ -3839,17 +4028,17 @@ class TZVPNVpnService : VpnService() {
                 if (pm.isDeviceIdleMode) {
                     Log.d(TAG, "Device entered Doze mode")
                 } else {
-                    Log.i(TAG, "Device exited Doze mode — checking connection health")
+                    Log.i(TAG, "Device exited Doze mode â€” checking connection health")
                     // Update underlying networks immediately (network state may have changed in Doze)
                     updateUnderlyingNetworks()
                     // Only reconnect if the proxy is actually unhealthy.
                     // Unconditional reconnect kills working DNSTT/SSH connections
                     // and causes unnecessary downtime on every Doze cycle.
                     if (!isCurrentProxyHealthy()) {
-                        Log.i(TAG, "Proxy unhealthy after Doze — reconnecting")
+                        Log.i(TAG, "Proxy unhealthy after Doze â€” reconnecting")
                         debouncedReconnect("doze mode exit")
                     } else {
-                        Log.d(TAG, "Proxy healthy after Doze — no reconnect needed")
+                        Log.d(TAG, "Proxy healthy after Doze â€” no reconnect needed")
                     }
                 }
             }
@@ -3895,7 +4084,7 @@ class TZVPNVpnService : VpnService() {
 
             override fun onAvailable(network: Network) {
                 Log.d(TAG, "Network available: $network")
-                // A network arrived — cancel any pending "no network" disconnect
+                // A network arrived â€” cancel any pending "no network" disconnect
                 networkLostJob?.cancel()
                 networkLostJob = null
 
@@ -3930,12 +4119,12 @@ class TZVPNVpnService : VpnService() {
                     lastNetworkAddresses = emptySet()
                     lastNetworkDnsServers = emptySet()
 
-                    // Wait briefly for a replacement network (e.g. WiFi → cellular handoff).
+                    // Wait briefly for a replacement network (e.g. WiFi â†’ cellular handoff).
                     // If no network arrives within the window, treat as full connectivity loss.
                     networkLostJob?.cancel()
                     networkLostJob = serviceScope.launch {
                         delay(3000)
-                        Log.w(TAG, "No network available after loss of $network — reporting tunnel failure")
+                        Log.w(TAG, "No network available after loss of $network â€” reporting tunnel failure")
                         handleTunnelFailure("network lost")
                     }
                 }
@@ -3975,9 +4164,9 @@ class TZVPNVpnService : VpnService() {
                     Log.i(TAG, "IP addresses changed: added=$added, removed=$removed")
                     debouncedReconnect("IP address change")
                 }
-                // If DNS servers changed (common during WiFi↔cellular handoff), reconnect
+                // If DNS servers changed (common during WiFiâ†”cellular handoff), reconnect
                 else if (lastNetworkDnsServers.isNotEmpty() && newDnsServers != lastNetworkDnsServers) {
-                    Log.i(TAG, "DNS servers changed: ${lastNetworkDnsServers} → $newDnsServers")
+                    Log.i(TAG, "DNS servers changed: ${lastNetworkDnsServers} â†’ $newDnsServers")
                     debouncedReconnect("DNS server change")
                 }
                 lastNetworkAddresses = newAddresses
@@ -4052,7 +4241,7 @@ class TZVPNVpnService : VpnService() {
             if (!reason.startsWith("tunnel recovery") && connectionEstablishedAt > 0) {
                 val elapsed = System.currentTimeMillis() - connectionEstablishedAt
                 if (elapsed < NETWORK_CHANGE_GRACE_MS) {
-                    Log.d(TAG, "Ignoring network change '$reason' — ${elapsed}ms after connection (grace period ${NETWORK_CHANGE_GRACE_MS}ms)")
+                    Log.d(TAG, "Ignoring network change '$reason' â€” ${elapsed}ms after connection (grace period ${NETWORK_CHANGE_GRACE_MS}ms)")
                     return@launch
                 }
             }
@@ -4121,7 +4310,7 @@ class TZVPNVpnService : VpnService() {
                 // For DNSTT-based tunnels, explicitly wait for the Go runtime to
                 // fully release the port.  stopCurrentProxy() already waits inside
                 // DnsttBridge.stopClient(), but we add an extra coroutine-friendly
-                // check here to be safe — this avoids spawning a second DNSTT
+                // check here to be safe â€” this avoids spawning a second DNSTT
                 // instance on a fallback port (which caused massive upload leaks).
                 val isDnstt = currentTunnelType in listOf(
                     TunnelType.DNSTT, TunnelType.DNSTT_SSH,
@@ -4626,7 +4815,7 @@ class TZVPNVpnService : VpnService() {
                 if (isProxyOnly) {
                     vpnRepository.setProxyConnected(profile)
                 } else if (HevSocks5Tunnel.isRunning()) {
-                    // tun2socks is still running — give it a moment to reconnect
+                    // tun2socks is still running â€” give it a moment to reconnect
                     // to the new proxy on the same port. If traffic doesn't resume,
                     // fall back to a full tun2socks restart.
                     delay(2000)
@@ -4634,7 +4823,7 @@ class TZVPNVpnService : VpnService() {
                     delay(1000)
                     val txAfter = HevSocks5Tunnel.getStats()?.txBytes ?: 0L
                     if (txAfter <= txBefore) {
-                        // No traffic flowing — tun2socks didn't auto-reconnect.
+                        // No traffic flowing â€” tun2socks didn't auto-reconnect.
                         // Full restart with existing VPN interface.
                         Log.w(TAG, "tun2socks didn't recover after proxy restart, restarting tun2socks")
                         withContext(Dispatchers.IO) {
@@ -4650,7 +4839,7 @@ class TZVPNVpnService : VpnService() {
                         }
                         Log.i(TAG, "tun2socks restarted successfully")
                     } else {
-                        Log.d(TAG, "tun2socks auto-reconnected (tx: $txBefore → $txAfter)")
+                        Log.d(TAG, "tun2socks auto-reconnected (tx: $txBefore â†’ $txAfter)")
                     }
                 }
 
@@ -4740,7 +4929,7 @@ class TZVPNVpnService : VpnService() {
 
         // If this was a chain connection, stop all layers in reverse order
         if (activeChainLayers.isNotEmpty()) {
-            Log.d(TAG, "Stopping chain layers: ${activeChainLayers.reversed().joinToString(" → ") { it.displayName }}")
+            Log.d(TAG, "Stopping chain layers: ${activeChainLayers.reversed().joinToString(" â†’ ") { it.displayName }}")
             for (layer in activeChainLayers.reversed()) {
                 stopLayer(layer)
             }
@@ -4877,7 +5066,8 @@ class TZVPNVpnService : VpnService() {
             TunnelType.NAIVE -> NaiveBridge.isClientHealthy() && NaiveSocksBridge.isClientHealthy()
             TunnelType.SNOWFLAKE -> SnowflakeBridge.isClientHealthy() && TorSocksBridge.isClientHealthy()
             TunnelType.SOCKS5 -> Socks5ProxyBridge.isRunning() && Socks5ProxyBridge.isClientHealthy()
-            TunnelType.VLESS -> VlessBridge.isRunning() && VlessBridge.isClientHealthy()
+            TunnelType.VLESS -> (if (VlessRealityBridge.isRunning()) VlessRealityBridge.isClientHealthy() else VlessBridge.isRunning() && VlessBridge.isClientHealthy())
+            TunnelType.HYSTERIA2 -> Hysteria2Bridge.isRunning() && Hysteria2Bridge.isClientHealthy()
         }
     }
 
@@ -4951,7 +5141,7 @@ class TZVPNVpnService : VpnService() {
                 }
                 SplitTunnelingMode.ALLOW -> {
                     // Only selected apps use VPN. Self is automatically excluded
-                    // (not in the allowed list) — which is what tunnel types need.
+                    // (not in the allowed list) â€” which is what tunnel types need.
                     for (pkg in splitApps) {
                         if (pkg == packageName) continue // don't route our own traffic through VPN
                         try {
@@ -5028,9 +5218,9 @@ class TZVPNVpnService : VpnService() {
                     }
                     is ConnectionState.Error -> {
                         stopTrafficNotificationPolling()
-                        // Don't stop service during kill switch — we're blocking traffic and reconnecting
+                        // Don't stop service during kill switch â€” we're blocking traffic and reconnecting
                         if (isKillSwitchActive) return@collect
-                        // Already handling reconnection — don't interfere
+                        // Already handling reconnection â€” don't interfere
                         if (isAutoReconnecting || isReconnecting) return@collect
 
                         // If connection was previously successful, route through
@@ -5040,7 +5230,7 @@ class TZVPNVpnService : VpnService() {
                             return@collect
                         }
 
-                        // Startup failure — show reconnect notification and stop
+                        // Startup failure â€” show reconnect notification and stop
                         if (currentProfileId != -1L) {
                             val reconnectNotification = notificationHelper.createReconnectNotification(
                                 message = state.message,
@@ -5052,7 +5242,7 @@ class TZVPNVpnService : VpnService() {
                         stopSelf()
                     }
                     // Disconnected is handled by the disconnect() coroutine which already
-                    // calls stopForeground/stopSelf. Do NOT call stopSelf() here — if the
+                    // calls stopForeground/stopSelf. Do NOT call stopSelf() here â€” if the
                     // user reconnects quickly on the same service instance, this observer
                     // may still be processing the old Disconnected state and would kill
                     // the new connection.
@@ -5078,7 +5268,7 @@ class TZVPNVpnService : VpnService() {
                 val screenOn = pm.isInteractive
                 val interval = when {
                     !screenOn -> 10_000L
-                    idleCount >= 3 -> 5_000L // 3+ consecutive idle ticks → slow down
+                    idleCount >= 3 -> 5_000L // 3+ consecutive idle ticks â†’ slow down
                     else -> 1_000L
                 }
                 delay(interval)
@@ -5115,22 +5305,22 @@ class TZVPNVpnService : VpnService() {
                     zeroThroughputSeconds += interval / 1000
                     if (!tunnelHealthWarningShown && zeroThroughputSeconds >= ZERO_THROUGHPUT_WARNING_SECONDS) {
                         tunnelHealthWarningShown = true
-                        connectionManager.setDnsWarning("No data flowing — server may be unreachable or overloaded")
+                        connectionManager.setDnsWarning("No data flowing â€” server may be unreachable or overloaded")
                     }
                     if (zeroThroughputSeconds >= ZERO_THROUGHPUT_DISCONNECT_SECONDS) {
-                        Log.w(TAG, "Zero throughput for ${zeroThroughputSeconds}s — disconnecting")
-                        connectionManager.onVpnError("Disconnected — no data received from server")
+                        Log.w(TAG, "Zero throughput for ${zeroThroughputSeconds}s â€” disconnecting")
+                        connectionManager.onVpnError("Disconnected â€” no data received from server")
                         disconnect()
                         return@launch
                     }
                 } else if (tunnelHealthWarningShown) {
-                    // Data started flowing — clear the warning
+                    // Data started flowing â€” clear the warning
                     tunnelHealthWarningShown = false
                     zeroThroughputSeconds = 0L
                     connectionManager.setDnsWarning(null)
                 }
 
-                // Skip notification updates while screen is off — nobody can see them,
+                // Skip notification updates while screen is off â€” nobody can see them,
                 // and they waste IPC / cause MIUI reordering issues.
                 // Health checks above still run regardless.
                 if (screenOn) {
@@ -5203,7 +5393,7 @@ class TZVPNVpnService : VpnService() {
         connectJob?.cancel()
         connectJob = null
 
-        // Cancel any in-progress reconnection immediately — before the coroutine.
+        // Cancel any in-progress reconnection immediately â€” before the coroutine.
         // This prevents a race where the reconnect coroutine is mid-flight in native
         // code (e.g., starting Slipstream on port 1081) while disconnect also tries
         // to stop/start, leading to "port already in use" on the next connect.
@@ -5242,7 +5432,7 @@ class TZVPNVpnService : VpnService() {
      * the TUN interface and tun2socks alive. This handles transient failures such as QUIC
      * idle timeouts on devices where the OS throttles background network (e.g. Chinese OEM
      * phones like Honor/Huawei), causing keepalive pings to fail and the transport connection
-     * to drop. Seamless reconnect minimizes the traffic gap — tun2socks buffers/retries
+     * to drop. Seamless reconnect minimizes the traffic gap â€” tun2socks buffers/retries
      * connections until the new proxy is ready.
      *
      * If seamless reconnect is not possible (tun2socks crashed) or has been exhausted
@@ -5269,14 +5459,14 @@ class TZVPNVpnService : VpnService() {
             val delayMs = SEAMLESS_RECONNECT_DELAYS_MS[delayIdx]
             Log.i(TAG, "Attempting seamless reconnect ($seamlessReconnectAttempts/$maxSeamless) in ${delayMs}ms: $reason")
             delay(delayMs)
-            // Skip the DNS pool scan during seamless reconnect — the resolvers
+            // Skip the DNS pool scan during seamless reconnect â€” the resolvers
             // are already validated and saved from the initial connect.
             vpnRepository.setAutoReconnect(true)
             handleNetworkChange("tunnel recovery: $reason")
             return
         }
 
-        // Seamless reconnect exhausted or not possible — reset counter and escalate.
+        // Seamless reconnect exhausted or not possible â€” reset counter and escalate.
         Log.i(TAG, "Escalating tunnel failure (seamless attempts=$seamlessReconnectAttempts): $reason")
         seamlessReconnectAttempts = 0
 
@@ -5309,7 +5499,7 @@ class TZVPNVpnService : VpnService() {
         healthCheckJob?.cancel()
         healthCheckJob = null
 
-        // Stop proxy/tunnel but NOT vpnInterface — TUN stays alive to block traffic
+        // Stop proxy/tunnel but NOT vpnInterface â€” TUN stays alive to block traffic
         withContext(Dispatchers.IO) {
             if (!isProxyOnly) {
                 try { HevSocks5Tunnel.stop() } catch (_: Exception) {}
@@ -5416,7 +5606,7 @@ class TZVPNVpnService : VpnService() {
         notificationManager.notify(NotificationHelper.VPN_NOTIFICATION_ID, notification)
 
         // Register a one-shot network callback to connect immediately when network arrives.
-        // Supplements the timer — whichever fires first wins.
+        // Supplements the timer â€” whichever fires first wins.
         if (bootNetworkCallback == null) {
             val request = NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -5553,7 +5743,7 @@ class TZVPNVpnService : VpnService() {
         lastNetworkDnsServers = emptySet()
 
         // Stop native tunnels on IO thread to avoid ANR.
-        // Timeout after 8s — if a bridge hangs, don't block the entire disconnect.
+        // Timeout after 8s â€” if a bridge hangs, don't block the entire disconnect.
         try {
             withTimeout(8000) {
                 withContext(Dispatchers.IO) {
@@ -5573,7 +5763,7 @@ class TZVPNVpnService : VpnService() {
                 }
             }
         } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
-            Log.w(TAG, "Cleanup timed out after 8s — bridge may be stuck, proceeding with disconnect")
+            Log.w(TAG, "Cleanup timed out after 8s â€” bridge may be stuck, proceeding with disconnect")
         }
 
         // Clear VPN service reference AFTER native code has stopped (or timed out).
@@ -5594,11 +5784,11 @@ class TZVPNVpnService : VpnService() {
     override fun onRevoke() {
         super.onRevoke()
         Log.i(TAG, "VPN permission revoked (another VPN took over)")
-        // Do NOT mark as user-initiated — onRevoke means another VPN took over,
+        // Do NOT mark as user-initiated â€” onRevoke means another VPN took over,
         // so onDestroy() should show the disconnect notification.
         // We still need to clean up, but skip setting isUserInitiatedDisconnect.
         isKillSwitchActive = false
-        // Cancel auto-reconnect — another VPN took over, don't fight it
+        // Cancel auto-reconnect â€” another VPN took over, don't fight it
         autoReconnectJob?.cancel()
         autoReconnectJob = null
         isAutoReconnecting = false

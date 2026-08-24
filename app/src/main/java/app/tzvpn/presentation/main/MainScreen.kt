@@ -930,6 +930,15 @@ fun MainScreen(
                                 onNavigateToAddProfile("vless")
                             }
                         )
+                        AddMenuGridItem(
+                            modifier = tileMod,
+                            icon = Icons.Default.Bolt,
+                            title = "Hysteria2",
+                            onClick = {
+                                showAddMenu = false
+                                onNavigateToAddProfile("hysteria2")
+                            }
+                        )
                         if (BuildConfig.INCLUDE_NAIVE) {
                             AddMenuGridItem(
                                 modifier = tileMod,

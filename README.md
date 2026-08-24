@@ -40,6 +40,9 @@ TZVPN supports multiple tunnel types with optional SSH chaining:
 | **SSH** | SSH | Standalone SSH tunnel (no DNS tunneling) |
 | **NaiveProxy** | HTTPS (Chromium) | HTTPS tunnel with authentic Chrome TLS fingerprinting |
 | **NaiveProxy + SSH** | HTTPS + SSH | NaiveProxy with SSH chaining for extra encryption |
+| **VLESS** | WebSocket + TLS | CDN-fronted VLESS tunnel with SNI fragmentation |
+| **VLESS + REALITY** | REALITY (uTLS) | VLESS over xtls REALITY — steals a real TLS handshake from a decoy site |
+| **Hysteria2** | QUIC | High-performance QUIC proxy with optional Salamander obfuscation |
 | **DOH** | DNS over HTTPS | DNS-only encryption via HTTPS (RFC 8484) |
 | **Tor** | Tor Network | Connect via Tor with Snowflake, obfs4, Meek, or custom bridges |
 

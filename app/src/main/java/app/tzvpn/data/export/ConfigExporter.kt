@@ -28,7 +28,7 @@ class ConfigExporter @Inject constructor() {
         const val ENCRYPTED_SCHEME = "tzvpn-enc://"
         /** Scheme for password-encrypted multi-profile bundles (see [exportAllProfilesEncrypted]). */
         const val BUNDLE_ENCRYPTED_SCHEME = "tzvpn-bundle-enc://"
-        const val VERSION = "28"
+        const val VERSION = "43"
         const val MODE_SLIPSTREAM = "ss"
         const val MODE_SLIPSTREAM_SSH = "slipstream_ssh"
         const val MODE_DNSTT = "dnstt"
@@ -44,6 +44,7 @@ class ConfigExporter @Inject constructor() {
         const val MODE_VAYDNS = "vaydns"
         const val MODE_VAYDNS_SSH = "vaydns_ssh"
         const val MODE_VLESS = "vless"
+        const val MODE_HYSTERIA2 = "hysteria2"
         private const val FIELD_DELIMITER = "|"
         private const val RESOLVER_DELIMITER = ","
         private const val RESOLVER_PART_DELIMITER = ":"
@@ -166,6 +167,7 @@ class ConfigExporter @Inject constructor() {
             TunnelType.VAYDNS -> MODE_VAYDNS
             TunnelType.VAYDNS_SSH -> MODE_VAYDNS_SSH
             TunnelType.VLESS -> MODE_VLESS
+            TunnelType.HYSTERIA2 -> MODE_HYSTERIA2
         }
 
         // When hideResolvers is true, leave position 4 empty so old versions (v1-v16)
@@ -257,10 +259,10 @@ class ConfigExporter @Inject constructor() {
             if (profile.sniFragmentEnabled) "1" else "0",
             sanitize(profile.sniFragmentStrategy),
             profile.sniFragmentDelayMs.toString(),
-            // v25–v27 held the SNI here. v28 moves it to the trailing vlessSni
+            // v25â€“v27 held the SNI here. v28 moves it to the trailing vlessSni
             // field so position 71 stays empty in all new exports. Kept in the
             // layout so v27 readers can still parse v28 output (they'd just
-            // see SNI="", falling back to domain — usually fine).
+            // see SNI="", falling back to domain â€” usually fine).
             "",
             // v26: DPI evasion options
             if (profile.chPaddingEnabled) "1" else "0",
@@ -274,8 +276,18 @@ class ConfigExporter @Inject constructor() {
             profile.tcpMaxSeg.toString(),
             // v28: Single TLS SNI for VLESS. Empty = the bridge falls back to
             // profile.domain (the WS Host). Replaces the legacy position-71
-            // field that v25–v27 used.
-            sanitize(profile.vlessSni)
+            // field that v25â€“v27 used.
+            sanitize(profile.vlessSni),
+            // v43: VLESS over REALITY
+            sanitize(profile.vlessRealityPubKey),
+            sanitize(profile.vlessRealityShortId),
+            sanitize(profile.vlessRealityFp),
+            // v43: Hysteria2
+            sanitize(profile.hy2Password),
+            sanitize(profile.hy2Sni),
+            if (profile.hy2Insecure) "1" else "0",
+            sanitize(profile.hy2Obfs),
+            sanitize(profile.hy2ObfsPassword)
         ).joinToString(FIELD_DELIMITER)
     }
 

@@ -80,7 +80,7 @@ class VpnRepositoryImpl @Inject constructor(
 
         fun resolveHost(host: String, customDnsServer: String? = null): String {
             if (host.isBlank()) return host
-            // Already numeric IPv4/IPv6 — pass through
+            // Already numeric IPv4/IPv6 â€” pass through
             if (app.tzvpn.tunnel.DomainRouter.isIpAddress(host)) return host
 
             // Try custom DNS server first (bypasses ISP DNS filtering)
@@ -88,7 +88,7 @@ class VpnRepositoryImpl @Inject constructor(
                 try {
                     val resolved = resolveViaUdp(host, customDnsServer)
                     if (resolved != null) {
-                        Log.i(TAG, "Resolved '$host' → $resolved via custom DNS $customDnsServer")
+                        Log.i(TAG, "Resolved '$host' â†’ $resolved via custom DNS $customDnsServer")
                         return resolved
                     }
                 } catch (e: Exception) {
@@ -102,7 +102,7 @@ class VpnRepositoryImpl @Inject constructor(
                 try {
                     val resolved = resolveViaUdp(host, dns)
                     if (resolved != null) {
-                        Log.i(TAG, "Resolved '$host' → $resolved via public DNS $dns")
+                        Log.i(TAG, "Resolved '$host' â†’ $resolved via public DNS $dns")
                         return resolved
                     }
                 } catch (e: Exception) {
@@ -221,7 +221,7 @@ class VpnRepositoryImpl @Inject constructor(
 
     /**
      * Job for the in-flight DNS pool scan (if any). Tracked so the service
-     * can [cancelPoolScan] when the user disconnects mid-scan — short-
+     * can [cancelPoolScan] when the user disconnects mid-scan â€” short-
      * circuiting the per-probe 8 s timeouts that
      * `testResolverE2eIsolated` would otherwise run to completion.
      */
@@ -330,7 +330,7 @@ class VpnRepositoryImpl @Inject constructor(
         val effectiveOverride = poolResult.getOrNull() ?: resolverOverride
 
         // Format DNS server address based on transport type.
-        // Resolve domain names to IPs — Go on Android cannot resolve hostnames.
+        // Resolve domain names to IPs â€” Go on Android cannot resolve hostnames.
         val dnsServer = formatDnsServerAddress(profile, effectiveOverride)
 
         val proxyPort = portOverride ?: preferencesDataStore.proxyListenPort.first()
@@ -399,7 +399,7 @@ class VpnRepositoryImpl @Inject constructor(
         }
         val effectiveOverride = poolResult.getOrNull() ?: resolverOverride
 
-        // Resolve domain names to IPs — Go on Android cannot resolve hostnames.
+        // Resolve domain names to IPs â€” Go on Android cannot resolve hostnames.
         val dnsServer = formatDnsServerAddress(profile, effectiveOverride)
 
         val proxyPort = portOverride ?: preferencesDataStore.proxyListenPort.first()
@@ -466,7 +466,7 @@ class VpnRepositoryImpl @Inject constructor(
         }
         val effectiveOverride = poolResult.getOrNull() ?: resolverOverride
 
-        // Resolve domain names to IPs — Go on Android cannot resolve hostnames.
+        // Resolve domain names to IPs â€” Go on Android cannot resolve hostnames.
         val dnsServer = formatDnsServerAddress(profile, effectiveOverride)
 
         val proxyPort = portOverride ?: preferencesDataStore.proxyListenPort.first()
@@ -527,16 +527,16 @@ class VpnRepositoryImpl @Inject constructor(
      * persist the top 10 lowest-latency entries into `profile.resolvers` so
      * the editor and auto-reconnect can reuse them.
      *
-     * Pool source is the global Settings → DNS pool (shared across all
+     * Pool source is the global Settings â†’ DNS pool (shared across all
      * DNSTT/NoizDNS/VayDNS profiles). Only the connected profile's
      * `resolvers` are updated.
      *
      * Returns:
-     *   - `Result.success(list)` — pool produced this resolver override; use it
-     *   - `Result.success(null)` — no override (pool disabled / explicit override
-     *     present / auto-reconnect / cancelled) — caller should proceed with its
+     *   - `Result.success(list)` â€” pool produced this resolver override; use it
+     *   - `Result.success(null)` â€” no override (pool disabled / explicit override
+     *     present / auto-reconnect / cancelled) â€” caller should proceed with its
      *     normal resolver path
-     *   - `Result.failure(...)` — **pool is enabled and the scan yielded zero
+     *   - `Result.failure(...)` â€” **pool is enabled and the scan yielded zero
      *     working resolvers**. Caller must surface this as a connect error
      *     instead of silently falling back to the bridge's hardcoded 8.8.8.8.
      */
@@ -547,11 +547,11 @@ class VpnRepositoryImpl @Inject constructor(
         if (explicitOverride != null) return Result.success(null)
         if (!preferencesDataStore.dnsPoolEnabled.first()) return Result.success(null)
         if (isAutoReconnect) {
-            Log.i(TAG, "[Pool] auto-reconnect — reusing ${profile.resolvers.size} existing resolvers, skipping scan")
+            Log.i(TAG, "[Pool] auto-reconnect â€” reusing ${profile.resolvers.size} existing resolvers, skipping scan")
             return Result.success(null)
         }
         if (profile.dnsTransport == DnsTransport.DOT || profile.dnsTransport == DnsTransport.DOH) {
-            Log.i(TAG, "[Pool] skipping pool scan — profile uses ${profile.dnsTransport.displayName}, pool scan requires UDP/TCP")
+            Log.i(TAG, "[Pool] skipping pool scan â€” profile uses ${profile.dnsTransport.displayName}, pool scan requires UDP/TCP")
             return Result.success(null)
         }
         val poolEntries = DnsPoolScanner.parsePool(preferencesDataStore.dnsPoolText.first())
@@ -575,19 +575,19 @@ class VpnRepositoryImpl @Inject constructor(
                         verified = verified,
                     )
                 },
-                // The scanner runs probes on a detached SupervisorJob — by
+                // The scanner runs probes on a detached SupervisorJob â€” by
                 // exposing it here we let [cancelPoolScan] tear it down on
                 // user disconnect even though scan() itself returns as soon
                 // as the 8th success arrives. (If we don't capture it, the
                 // background probe cleanup keeps running but is unreachable
-                // until it finishes naturally — fine but wasteful.)
+                // until it finishes naturally â€” fine but wasteful.)
                 onJobStart = { job -> poolScanJob = job }
             )
             if (top.isEmpty()) {
-                Log.w(TAG, "[Pool] scan yielded no working resolvers — failing connect")
+                Log.w(TAG, "[Pool] scan yielded no working resolvers â€” failing connect")
                 val msg = "No working DNS resolver found in pool (${poolEntries.size} entries scanned)"
                 // Push Error directly into the connection flow so the main
-                // screen exits "Connecting…" the instant the scan ends — don't
+                // screen exits "Connectingâ€¦" the instant the scan ends â€” don't
                 // rely on the caller's failure-path plumbing alone, which has
                 // multiple variants (single connect / chain layer / SSH-wrapped)
                 // and would otherwise leave the UI stuck if any one swallows
@@ -598,7 +598,7 @@ class VpnRepositoryImpl @Inject constructor(
             val topResolvers = top.map { (e, _) -> DnsResolver(host = e.host, port = e.port) }
             // Persist asynchronously so the tunnel handshake doesn't wait on
             // a Room write. The connect is using `topResolvers` already, so
-            // a slow/failed write doesn't affect this connect — only the
+            // a slow/failed write doesn't affect this connect â€” only the
             // value shown in the editor on next open.
             scope.launch {
                 try {
@@ -622,7 +622,7 @@ class VpnRepositoryImpl @Inject constructor(
      * domain names to numeric IPs (Go on Android cannot resolve hostnames).
      *
      * For TCP and DoT transports, runs a fast parallel TCP-connect preflight
-     * and drops unresponsive resolvers before they reach the native bridge —
+     * and drops unresponsive resolvers before they reach the native bridge â€”
      * a single dead resolver in the list would otherwise stall connection
      * setup while the bridge times out on it.
      */
@@ -678,7 +678,7 @@ class VpnRepositoryImpl @Inject constructor(
         }
         val live = probes.filter { it.ok }.map { it.resolver to it.ip }
         if (live.isEmpty()) {
-            Log.w(TAG, "Resolver preflight: none of ${resolved.size} resolvers responded within ${timeoutMs}ms — passing full list to bridge")
+            Log.w(TAG, "Resolver preflight: none of ${resolved.size} resolvers responded within ${timeoutMs}ms â€” passing full list to bridge")
             return resolved
         }
         if (live.size != resolved.size) {
@@ -737,7 +737,7 @@ class VpnRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Start SlipstreamSocksBridge — a middleman SOCKS5 proxy for Slipstream non-SSH.
+     * Start SlipstreamSocksBridge â€” a middleman SOCKS5 proxy for Slipstream non-SSH.
      * Chains CONNECT to Slipstream's SOCKS5 and handles FWD_UDP (DNS/UDP) directly.
      */
     suspend fun startSlipstreamSocksBridge(
@@ -773,8 +773,8 @@ class VpnRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Start DnsttSocksBridge — a middleman SOCKS5 proxy for DNSTT standalone.
-     * Chains CONNECT to DNSTT's raw tunnel (→ Dante) and handles FWD_UDP (DNS) via worker pool.
+     * Start DnsttSocksBridge â€” a middleman SOCKS5 proxy for DNSTT standalone.
+     * Chains CONNECT to DNSTT's raw tunnel (â†’ Dante) and handles FWD_UDP (DNS) via worker pool.
      */
     suspend fun startDnsttSocksBridge(
         dnsttPort: Int,
@@ -809,7 +809,7 @@ class VpnRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Start NaiveSocksBridge — a middleman SOCKS5 proxy for standalone NaiveProxy.
+     * Start NaiveSocksBridge â€” a middleman SOCKS5 proxy for standalone NaiveProxy.
      * Chains CONNECT to NaiveProxy's SOCKS5 (NO_AUTH) and handles FWD_UDP (DNS) via worker pool.
      */
     suspend fun startNaiveSocksBridge(
@@ -876,7 +876,7 @@ class VpnRepositoryImpl @Inject constructor(
         }
 
         // Step 2: Start TorSocksBridge
-        // Tor SOCKS5 is always local — use 127.0.0.1 for upstream, proxyHost for listen
+        // Tor SOCKS5 is always local â€” use 127.0.0.1 for upstream, proxyHost for listen
         val localAuthUser = if (preferencesDataStore.proxyAuthEnabled.first()) preferencesDataStore.proxyAuthUsername.first().ifEmpty { null } else null
         val localAuthPass = if (preferencesDataStore.proxyAuthEnabled.first()) preferencesDataStore.proxyAuthPassword.first().ifEmpty { null } else null
         val bridgeResult = TorSocksBridge.start(
@@ -1045,7 +1045,12 @@ class VpnRepositoryImpl @Inject constructor(
             }
             TunnelType.VLESS -> {
                 Log.d(TAG, "Stopping VLESS proxy bridge")
+                VlessRealityBridge.stop()
                 VlessBridge.stop()
+            }
+            TunnelType.HYSTERIA2 -> {
+                Log.d(TAG, "Stopping Hysteria2 proxy bridge")
+                Hysteria2Bridge.stop()
             }
             null -> {
                 // Try to stop all just in case
@@ -1250,7 +1255,7 @@ class VpnRepositoryImpl @Inject constructor(
             }
             TunnelType.DNSTT, TunnelType.NOIZDNS, TunnelType.VAYDNS -> {
                 // VAYDNS in proxy-only mode relays through DnsttSocksBridge on the
-                // SOCKS5 listen port, same as DNSTT/NOIZDNS — so its byte counters
+                // SOCKS5 listen port, same as DNSTT/NOIZDNS â€” so its byte counters
                 // are authoritative in both proxy-only and VPN mode.
                 sent = DnsttSocksBridge.getTunnelTxBytes()
                 received = DnsttSocksBridge.getTunnelRxBytes()
@@ -1265,8 +1270,17 @@ class VpnRepositoryImpl @Inject constructor(
                 received = Socks5ProxyBridge.getTunnelRxBytes()
             }
             TunnelType.VLESS -> {
-                sent = VlessBridge.getTunnelTxBytes()
-                received = VlessBridge.getTunnelRxBytes()
+                if (VlessRealityBridge.isRunning()) {
+                    sent = VlessRealityBridge.getTunnelTxBytes()
+                    received = VlessRealityBridge.getTunnelRxBytes()
+                } else {
+                    sent = VlessBridge.getTunnelTxBytes()
+                    received = VlessBridge.getTunnelRxBytes()
+                }
+            }
+            TunnelType.HYSTERIA2 -> {
+                sent = Hysteria2Bridge.getTunnelTxBytes()
+                received = Hysteria2Bridge.getTunnelRxBytes()
             }
             TunnelType.NAIVE -> {
                 sent = NaiveSocksBridge.getTunnelTxBytes()

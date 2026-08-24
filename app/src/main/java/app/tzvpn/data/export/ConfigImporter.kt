@@ -112,6 +112,7 @@ class ConfigImporter @Inject constructor() {
         private const val MODE_VAYDNS = "vaydns"
         private const val MODE_VAYDNS_SSH = "vaydns_ssh"
         private const val MODE_VLESS = "vless"
+    private const val MODE_HYSTERIA2 = "hysteria2"
         private const val FIELD_DELIMITER = "|"
         private const val RESOLVER_DELIMITER = ","
         private const val RESOLVER_PART_DELIMITER = ":"
@@ -187,6 +188,17 @@ class ConfigImporter @Inject constructor() {
                 continue
             }
 
+            // Handle standard hysteria2:// URIs
+            if (trimmedLine.startsWith("hysteria2://", ignoreCase = true)) {
+                val result = parseHysteria2Uri(trimmedLine, index + 1)
+                when (result) {
+                    is ProfileParseResult.Success -> profiles.add(result.profile)
+                    is ProfileParseResult.Warning -> warnings.add(result.message)
+                    is ProfileParseResult.Error -> warnings.add(result.message)
+                }
+                continue
+            }
+
             if (trimmedLine.startsWith(ENCRYPTED_SCHEME, ignoreCase = true)) {
                 val encoded = trimmedLine.substring(ENCRYPTED_SCHEME.length)
                 val encryptedBytes = try {
@@ -213,7 +225,7 @@ class ConfigImporter @Inject constructor() {
                             profiles.add(profile)
                             val version = decoded.split(FIELD_DELIMITER).firstOrNull()?.toIntOrNull()
                             if (version != null && version > CURRENT_MAX_VERSION) {
-                                warnings.add("Line ${index + 1}: Exported from a newer app version — some settings may be missing")
+                                warnings.add("Line ${index + 1}: Exported from a newer app version â€” some settings may be missing")
                             }
                         }
                     }
@@ -246,7 +258,7 @@ class ConfigImporter @Inject constructor() {
                         profiles.add(profile)
                         val version = decoded.split(FIELD_DELIMITER).firstOrNull()?.toIntOrNull()
                         if (version != null && version > CURRENT_MAX_VERSION) {
-                            warnings.add("Line ${index + 1}: Exported from a newer app version — some settings may be missing")
+                            warnings.add("Line ${index + 1}: Exported from a newer app version â€” some settings may be missing")
                         }
                     }
                 }
@@ -308,13 +320,13 @@ class ConfigImporter @Inject constructor() {
             "25" -> parseProfileV25(fields, lineNum)
             "26" -> parseProfileV26(fields, lineNum)
             "27" -> parseProfileV27(fields, lineNum)
-            "28" -> parseProfileV28(fields, lineNum)
+            "28" -> parseProfileV43(fields, lineNum)
             else -> {
                 // Forward compatibility: try the highest known parser for newer versions.
                 // Extra trailing fields are safely ignored (parsers only check minimum count).
                 val versionNum = version.toIntOrNull()
                 if (versionNum != null && versionNum > 28) {
-                    parseProfileV28(fields, lineNum)
+                    parseProfileV43(fields, lineNum)
                 } else {
                     ProfileParseResult.Error("Line $lineNum: Unsupported version '$version'")
                 }
@@ -402,6 +414,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -489,6 +502,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -581,6 +595,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -676,6 +691,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -783,6 +799,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -890,6 +907,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -912,7 +930,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns — ignored (removed, now global setting)
+        // fields[20] was useServerDns â€” ignored (removed, now global setting)
 
         if (name.isBlank()) {
             return ProfileParseResult.Error("Line $lineNum: Profile name is required")
@@ -993,6 +1011,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -1015,7 +1034,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns — ignored (removed, now global setting)
+        // fields[20] was useServerDns â€” ignored (removed, now global setting)
         val dohUrl = fields[21]
 
         if (name.isBlank()) {
@@ -1107,6 +1126,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -1129,7 +1149,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns — ignored (removed, now global setting)
+        // fields[20] was useServerDns â€” ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
 
@@ -1243,6 +1263,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -1265,7 +1286,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns — ignored (removed, now global setting)
+        // fields[20] was useServerDns â€” ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -1381,6 +1402,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -1403,7 +1425,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns — ignored (removed, now global setting)
+        // fields[20] was useServerDns â€” ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -1526,6 +1548,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -1548,7 +1571,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns — ignored (removed, now global setting)
+        // fields[20] was useServerDns â€” ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -1672,6 +1695,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -1694,7 +1718,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns — ignored (removed, now global setting)
+        // fields[20] was useServerDns â€” ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -1715,7 +1739,7 @@ class ConfigImporter @Inject constructor() {
         val naivePassword = try {
             String(Base64.decode(fields[30], Base64.NO_WRAP), Charsets.UTF_8)
         } catch (_: Exception) { "" }
-        // fields[31] was naiveSni (removed) — ignored if present
+        // fields[31] was naiveSni (removed) â€” ignored if present
 
         if (name.isBlank()) {
             return ProfileParseResult.Error("Line $lineNum: Profile name is required")
@@ -1835,6 +1859,7 @@ class ConfigImporter @Inject constructor() {
             MODE_VAYDNS -> TunnelType.VAYDNS
             MODE_VAYDNS_SSH -> TunnelType.VAYDNS_SSH
             MODE_VLESS -> TunnelType.VLESS
+            MODE_HYSTERIA2 -> TunnelType.HYSTERIA2
 
             else -> {
                 return ProfileParseResult.Warning("Line $lineNum: Unsupported tunnel type '$tunnelTypeStr', skipping")
@@ -1857,7 +1882,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns — ignored
+        // fields[20] was useServerDns â€” ignored
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -2188,7 +2213,7 @@ class ConfigImporter @Inject constructor() {
      * vless://uuid@server:port?type=ws&security=tls&path=/ws&host=domain&sni=domain&fp=chrome#name
      *
      * Supported query params:
-     * - type: transport type (ws, tcp, grpc) — only ws is supported
+     * - type: transport type (ws, tcp, grpc) â€” only ws is supported
      * - security: tls, none
      * - path: WebSocket path
      * - host: WebSocket Host header / TLS SNI
@@ -2216,7 +2241,7 @@ class ConfigImporter @Inject constructor() {
 
             // Split userinfo@host:port?params
             val atIdx = mainPart.indexOf('@')
-            if (atIdx < 0) return ProfileParseResult.Error("Line $lineNum: Invalid VLESS URI — missing UUID")
+            if (atIdx < 0) return ProfileParseResult.Error("Line $lineNum: Invalid VLESS URI â€” missing UUID")
             val uuid = mainPart.substring(0, atIdx)
 
             val afterAt = mainPart.substring(atIdx + 1)
@@ -2237,7 +2262,7 @@ class ConfigImporter @Inject constructor() {
             } else {
                 val colonIdx = hostPort.lastIndexOf(':')
                 if (colonIdx > 0 && hostPort.indexOf(':') == colonIdx) {
-                    // Single colon — host:port
+                    // Single colon â€” host:port
                     server = hostPort.substring(0, colonIdx)
                     port = hostPort.substring(colonIdx + 1).toIntOrNull() ?: 443
                 } else {
@@ -2281,18 +2306,27 @@ class ConfigImporter @Inject constructor() {
             val normalizedTransport = when (transport) {
                 "ws", "websocket" -> "ws"
                 "tcp", "raw" -> "tcp"
-                else -> return ProfileParseResult.Warning("Line $lineNum: Only VLESS over WebSocket is supported — '$transport' transport is not available")
+                else -> return ProfileParseResult.Warning("Line $lineNum: Only VLESS over WebSocket is supported â€” '$transport' transport is not available")
             }
 
-            // Only WebSocket transport is supported.
-            if (normalizedTransport != "ws") {
-                return ProfileParseResult.Warning("Line $lineNum: Only VLESS over WebSocket is supported — this config uses '$transport' transport")
+            // Only WebSocket transport is supported â€” except REALITY, which
+            // always uses raw TCP (the standard REALITY setup).
+            if (normalizedTransport != "ws" && security != "reality") {
+                return ProfileParseResult.Warning("Line $lineNum: Only VLESS over WebSocket is supported â€” this config uses '$transport' transport")
             }
 
             val normalizedSecurity = when (security) {
-                "tls", "reality" -> "tls"
+                "tls", "reality" -> security
                 "none", "" -> "none"
                 else -> "tls"
+            }
+
+            // REALITY params (pbk = base64url public key, sid = hex shortId, fp = uTLS fingerprint)
+            val realityPubKey = params["pbk"] ?: ""
+            val realityShortId = params["sid"] ?: ""
+            val realityFp = (params["fp"] ?: "chrome").ifBlank { "chrome" }
+            if (normalizedSecurity == "reality" && realityPubKey.isBlank()) {
+                return ProfileParseResult.Error("Line $lineNum: REALITY config is missing pbk= (public key)")
             }
 
             // Validate UUID
@@ -2302,9 +2336,9 @@ class ConfigImporter @Inject constructor() {
             }
 
             // domain  = WS Host header (routing hostname, used as SNI when vlessSni is empty)
-            // vlessSni = explicit TLS SNI — only stored when the URI's sni=
+            // vlessSni = explicit TLS SNI â€” only stored when the URI's sni=
             //            differs from host= (legitimate CDN setups where the
-            //            cert hostname ≠ the origin routing hostname, or a
+            //            cert hostname â‰  the origin routing hostname, or a
             //            DPI-evasion decoy on direct servers).
             val profile = ServerProfile(
                 name = profileName,
@@ -2316,15 +2350,104 @@ class ConfigImporter @Inject constructor() {
                 vlessWsPath = wsPath,
                 cdnIp = cdnIp,
                 cdnPort = cdnPort,
-                sniFragmentEnabled = fragmentEnabled,
+                sniFragmentEnabled = fragmentEnabled && normalizedSecurity != "reality",
                 sniFragmentStrategy = fragmentStrategy,
                 sniFragmentDelayMs = fragmentDelay,
-                vlessSni = if (sni != wsHost) sni else ""
+                vlessSni = if (sni != wsHost) sni else "",
+                vlessRealityPubKey = realityPubKey,
+                vlessRealityShortId = realityShortId,
+                vlessRealityFp = realityFp
             )
 
             return ProfileParseResult.Success(profile)
         } catch (e: Exception) {
             return ProfileParseResult.Error("Line $lineNum: Failed to parse VLESS URI: ${e.message}")
+        }
+    }
+
+    /**
+     * Parse a standard hysteria2:// URI:
+     * hysteria2://password@host:port?sni=domain&insecure=1&obfs=salamander&obfs-password=xxx#name
+     */
+    private fun parseHysteria2Uri(uri: String, lineNum: Int): ProfileParseResult {
+        return try {
+            val withoutScheme = uri.substring("hysteria2://".length)
+            val name: String
+            var rest = withoutScheme
+            val hashIdx = rest.indexOf('#')
+            if (hashIdx >= 0) {
+                name = android.net.Uri.decode(rest.substring(hashIdx + 1)).ifBlank { "Hysteria2" }
+                rest = rest.substring(0, hashIdx)
+            } else {
+                name = "Hysteria2"
+            }
+
+            val atIdx = rest.indexOf('@')
+            if (atIdx < 0) {
+                return ProfileParseResult.Error("Line $lineNum: Invalid Hysteria2 URI (missing password)")
+            }
+            val password = android.net.Uri.decode(rest.substring(0, atIdx))
+            val hostPortQuery = rest.substring(atIdx + 1)
+
+            val queryIdx = hostPortQuery.indexOf('?')
+            val hostPort = if (queryIdx >= 0) hostPortQuery.substring(0, queryIdx) else hostPortQuery
+            val queryString = if (queryIdx >= 0) hostPortQuery.substring(queryIdx + 1) else ""
+
+            val params = mutableMapOf<String, String>()
+            if (queryString.isNotEmpty()) {
+                for (pair in queryString.split('&')) {
+                    val eq = pair.indexOf('=')
+                    if (eq > 0) {
+                        params[pair.substring(0, eq)] = android.net.Uri.decode(pair.substring(eq + 1))
+                    }
+                }
+            }
+
+            // host:port (IPv6 literal aware)
+            val host: String
+            val port: Int
+            if (hostPort.startsWith("[")) {
+                val close = hostPort.indexOf(']')
+                if (close < 0) return ProfileParseResult.Error("Line $lineNum: Invalid Hysteria2 host")
+                host = hostPort.substring(1, close)
+                port = hostPort.substring(close + 1).removePrefix(":").toIntOrNull() ?: 443
+            } else {
+                val colon = hostPort.lastIndexOf(':')
+                if (colon > 0) {
+                    host = hostPort.substring(0, colon)
+                    port = hostPort.substring(colon + 1).toIntOrNull() ?: 443
+                } else {
+                    host = hostPort
+                    port = 443
+                }
+            }
+
+            if (host.isBlank() || password.isBlank()) {
+                return ProfileParseResult.Error("Line $lineNum: Invalid Hysteria2 URI (missing host or password)")
+            }
+
+            val sni = params["sni"] ?: ""
+            val insecure = params["insecure"] in listOf("1", "true", "yes")
+            val obfs = (params["obfs"] ?: "").let { if (it == "none") "" else it }
+            val obfsPassword = params["obfs-password"] ?: ""
+            if (obfs.isNotEmpty() && obfs != "salamander") {
+                return ProfileParseResult.Warning("Line $lineNum: Unsupported Hysteria2 obfs '$obfs' (only salamander)")
+            }
+
+            val profile = ServerProfile(
+                name = name,
+                domain = host,
+                tunnelType = TunnelType.HYSTERIA2,
+                cdnPort = port,
+                hy2Password = password,
+                hy2Sni = sni,
+                hy2Insecure = insecure,
+                hy2Obfs = obfs,
+                hy2ObfsPassword = obfsPassword
+            )
+            ProfileParseResult.Success(profile)
+        } catch (e: Exception) {
+            ProfileParseResult.Error("Line $lineNum: Failed to parse Hysteria2 URI: ${e.message}")
         }
     }
 
@@ -2351,8 +2474,8 @@ class ConfigImporter @Inject constructor() {
         val sniFragmentStrategy = if (fields.size > 69 && fields[69].isNotBlank()) fields[69] else "sni_split"
         // SNI fragment delay (position 70)
         val sniFragmentDelayMs = if (fields.size > 70) fields[70].toIntOrNull() ?: 100 else 100
-        // Legacy "fake SNI" field (position 71). v25–v27 used one SNI field
-        // that got overloaded by the URI importer — any sni= that differed
+        // Legacy "fake SNI" field (position 71). v25â€“v27 used one SNI field
+        // that got overloaded by the URI importer â€” any sni= that differed
         // from host= was stuffed here. Map it to the single vlessSni going
         // forward. Only VLESS profiles ever populated position 71, so this is
         // a no-op for other tunnel types.
@@ -2440,6 +2563,38 @@ class ConfigImporter @Inject constructor() {
         } else {
             baseResult
         }
+    }
+
+    // v43 adds VLESS-over-REALITY fields (positions 79-81) and Hysteria2
+    // fields (positions 82-86). All are trailing additions â€” older versions
+    // parse fine because every field has a safe default.
+    private fun parseProfileV43(fields: List<String>, lineNum: Int): ProfileParseResult {
+        val baseResult = parseProfileV28(fields, lineNum)
+        if (baseResult !is ProfileParseResult.Success) return baseResult
+
+        // VLESS REALITY (positions 79-81)
+        val vlessRealityPubKey = if (fields.size > 79) fields[79] else ""
+        val vlessRealityShortId = if (fields.size > 80) fields[80] else ""
+        val vlessRealityFp = if (fields.size > 81 && fields[81].isNotBlank()) fields[81] else "chrome"
+
+        // Hysteria2 (positions 82-86)
+        val hy2Password = if (fields.size > 82) fields[82] else ""
+        val hy2Sni = if (fields.size > 83) fields[83] else ""
+        val hy2Insecure = if (fields.size > 84) fields[84] == "1" else false
+        val hy2Obfs = if (fields.size > 85) fields[85] else ""
+        val hy2ObfsPassword = if (fields.size > 86) fields[86] else ""
+
+        val profile = baseResult.profile.copy(
+            vlessRealityPubKey = vlessRealityPubKey,
+            vlessRealityShortId = vlessRealityShortId,
+            vlessRealityFp = vlessRealityFp,
+            hy2Password = hy2Password,
+            hy2Sni = hy2Sni,
+            hy2Insecure = hy2Insecure,
+            hy2Obfs = hy2Obfs,
+            hy2ObfsPassword = hy2ObfsPassword
+        )
+        return ProfileParseResult.Success(profile)
     }
 
     private fun parseResolvers(resolversStr: String): List<DnsResolver> {
