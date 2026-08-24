@@ -80,8 +80,10 @@ replace (
 	dnstt-mobile => ../dnstt-mobile
 	github.com/net2share/vaydns => ../vaydns
 	github.com/xtaci/kcp-go/v5 => github.com/net2share/kcp-go/v5 v5.0.0-20260325165956-416ba9d3856d
+	hysteria2-mobile => ../hysteria2-mobile
 	noizdns => ../noizdns
 	snowflake-mobile => ../snowflake-mobile
 	vaydns-mobile => ../vaydns-mobile
+	vlessreality-mobile => ../vlessreality-mobile
 	www.bamsoftware.com/git/dnstt.git => ../dnstt
 )

@@ -1,6 +1,7 @@
 package app.tzvpn.tunnel
 
 import hysteria2.Client
+import hysteria2.Hysteria2
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
@@ -39,7 +40,7 @@ object Hysteria2Bridge {
         stop()
 
         return try {
-            val c = Client(
+            val c: Client = Hysteria2.newClient(
                 "$listenHost:$listenPort",
                 "$serverHost:$serverPort",
                 password,

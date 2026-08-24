@@ -2,6 +2,7 @@ package app.tzvpn.tunnel
 
 import android.util.Base64
 import vlessreality.Client
+import vlessreality.Vlessreality
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
@@ -50,7 +51,7 @@ object VlessRealityBridge {
                 return Result.failure(IllegalArgumentException("REALITY public key must be 32 bytes base64url"))
             }
 
-            val c = Client(
+            val c: Client = Vlessreality.newClient(
                 "$listenHost:$listenPort",
                 "$serverHost:$serverPort",
                 uuid,
