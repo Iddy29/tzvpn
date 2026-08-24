@@ -111,7 +111,7 @@ interface ResolverScannerRepository {
     ): Boolean
 
     /**
-     * Probe a single resolver using the Prism (slipgate) HMAC challenge-response protocol.
+     * Probe a single resolver using the Prism (cybergate) HMAC challenge-response protocol.
      * Sends base32(nonce || HMAC(key,nonce)[:16]).<domain> as a TXT query with EDNS0(4096),
      * then verifies the server's response encodes HMAC(key, nonce||0x01).
      * Returns true only when the resolver forwards to a server holding [pubkey].

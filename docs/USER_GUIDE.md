@@ -12,7 +12,7 @@
 2. Supported tunnel types
 3. Editions: Full vs. Lite
 4. Installing the APK
-5. You need a server (use SlipGate)
+5. You need a server (use CyberGate)
 6. Adding your first profile
 7. Connecting and disconnecting
 8. The DNS Resolver Scanner
@@ -37,7 +37,7 @@ Unlike a typical VPN that ships with a single protocol, TZVPN offers many **tran
 - If your network does deep traffic inspection and recognises tunnel-shaped flows, layer SSH on top of any of the above for zero DNS leaks and an extra layer of encryption.
 - In the worst case, fall back to Tor with Snowflake, obfs4, or Meek bridges (Full edition only).
 
-TZVPN sits in the same family as projects like [Tor](https://torproject.org), [Psiphon](https://psiphon.ca), and [Outline VPN](https://getoutline.org), but with one critical difference: TZVPN is **pure client software**. There is no central network or company-run infrastructure — you either run your own server (a few minutes with [SlipGate](https://github.com/Iddy29/slipgate)) or get a config from someone you trust. That model has three real advantages:
+TZVPN sits in the same family as projects like [Tor](https://torproject.org), [Psiphon](https://psiphon.ca), and [Outline VPN](https://getoutline.org), but with one critical difference: TZVPN is **pure client software**. There is no central network or company-run infrastructure — you either run your own server (a few minutes with [CyberGate](https://github.com/Iddy29/tzvpn/tree/main/cybergate)) or get a config from someone you trust. That model has three real advantages:
 
 - **Privacy.** Your traffic exits through a server you or someone you know controls — not an unknown company's exit node.
 - **Resilience.** With no central infrastructure to filter, blocking the project is impractical. If a single server gets blocked, swap the IP and update one DNS record.
@@ -104,18 +104,18 @@ TZVPN ships in two editions — the difference is the size of the APK and which 
 
 ---
 
-## 5. You need a server — use SlipGate
+## 5. You need a server — use CyberGate
 
 TZVPN is a *client*. To use it you must connect to a **server** running a compatible tunnel.
 
-The official, supported way to run a server is **SlipGate** — a one-command Linux installer that sets up every protocol TZVPN supports.
+The official, supported way to run a server is **CyberGate** — a one-command Linux installer that sets up every protocol TZVPN supports.
 
-> https://github.com/Iddy29/slipgate
+> https://github.com/Iddy29/tzvpn/tree/main/cybergate
 
-A separate operator guide for SlipGate is available alongside this document. In short: get a $5/month VPS, point a domain at it, run a single install command, create a user, and SlipGate prints a `tzvpn://` link you paste straight into the app.
+A separate operator guide for CyberGate is available alongside this document. In short: get a $5/month VPS, point a domain at it, run a single install command, create a user, and CyberGate prints a `tzvpn://` link you paste straight into the app.
 
 If you don't run your own server, you can:
-- Get a `tzvpn://` link from a friend who runs SlipGate, or
+- Get a `tzvpn://` link from a friend who runs CyberGate, or
 - Use a public test link sometimes shared in [Iddy29/tzvpn](https://github.com/Iddy29/tzvpn).
 
 ---
@@ -205,11 +205,11 @@ The classic two-stage flow. Stage 1 is the DNS probe and gives every resolver a 
 Skips the DNS probe entirely. For each candidate IP it just opens a real tunnel and tries an HTTP request. Use this when you already have a list of "known DNS-tunnel-capable" IPs and you only want to know which ones currently reach your specific server fast.
 
 #### Prism
-*"Server-verified scan: only resolvers that cryptographically prove they reach your specific server are shown. Requires SlipGate installed on your server."*
+*"Server-verified scan: only resolvers that cryptographically prove they reach your specific server are shown. Requires CyberGate installed on your server."*
 
-The strongest mode. Sends HMAC-authenticated probes that only a real SlipGate server can sign correctly, so a resolver that "works" but actually delivers traffic to an attacker's middlebox will fail the check. Each resolver is probed N times; resolvers that get ≥ *threshold* signed responses pass. Use this when you suspect transparent-proxy interception or want defense against tunnel hijacking.
+The strongest mode. Sends HMAC-authenticated probes that only a real CyberGate server can sign correctly, so a resolver that "works" but actually delivers traffic to an attacker's middlebox will fail the check. Each resolver is probed N times; resolvers that get ≥ *threshold* signed responses pass. Use this when you suspect transparent-proxy interception or want defense against tunnel hijacking.
 
-Only available when your selected profile has a valid public key and your server runs [SlipGate](https://github.com/Iddy29/slipgate).
+Only available when your selected profile has a valid public key and your server runs [CyberGate](https://github.com/Iddy29/tzvpn/tree/main/cybergate).
 
 ---
 
@@ -527,7 +527,7 @@ This is doubly serious if you bought your **VPS or domain inside the country who
 
 Rules of thumb:
 
-- For wider distribution, host on a **VPS bought outside the country** with a domain registered through an **off-shore registrar**. On that same VPS, **enable Warp from inside SlipGate** so the server's egress goes through Cloudflare Warp and the real VPS IP is never exposed downstream.
+- For wider distribution, host on a **VPS bought outside the country** with a domain registered through an **off-shore registrar**. On that same VPS, **enable Warp from inside CyberGate** so the server's egress goes through Cloudflare Warp and the real VPS IP is never exposed downstream.
 - Share configs **privately** (1-to-1, end-to-end-encrypted chat) — not in groups, not on websites, not pinned in channels.
 - Use `tzvpn-enc://` lock features (expiration, device-bind, hide-resolvers, no-resharing) to **slow down** abuse, not to make a config publicly shareable.
 
@@ -548,8 +548,8 @@ Development is unpaid. If TZVPN helps you, donation addresses (BEP-20 / ERC-20 /
 - Verify the APK signature if you're paranoid (signing fingerprint is on the GitHub release page).
 - Never share your `tzvpn://` link with strangers.
 - Use **encrypted export** for backups.
-- Verify your server is genuine with **Prism** (server-verified scan) — works with SlipGate.
-- If you run your own server: never hand out `root` or any shell-login account as a VPN credential — always create dedicated SlipGate users.
+- Verify your server is genuine with **Prism** (server-verified scan) — works with CyberGate.
+- If you run your own server: never hand out `root` or any shell-login account as a VPN credential — always create dedicated CyberGate users.
 
 Repository: https://github.com/Iddy29/tzvpn
 Source: https://github.com/Iddy29/tzvpn
@@ -571,7 +571,7 @@ Source: https://github.com/Iddy29/tzvpn
 - ۲. تونل‌های پشتیبانی‌شده
 - ۳. نسخه‌ها: Full و Lite
 - ۴. نصب APK
-- ۵. سرور لازم است (با SlipGate)
+- ۵. سرور لازم است (با CyberGate)
 - ۶. اولین پروفایل
 - ۷. اتصال و قطع
 - ۸. اسکنر DNS
@@ -596,7 +596,7 @@ TZVPN یک ابزار رایگان و **source-available** (سورس‌کدش ق
 - اگر شبکه به‌شدت بازرسی می‌شود و الگوی ترافیک شما را تشخیص می‌دهد، می‌توانید روی هر کدام از این تونل‌ها یک لایه‌ی SSH هم اضافه کنید تا نشت DNS صفر شود و ترافیک رمزنگاری بیشتری داشته باشد.
 - در سخت‌ترین شرایط، می‌توانید از Tor همراه با Snowflake، obfs4 یا Meek استفاده کنید (فقط در نسخه‌ی Full).
 
-از نظر فلسفه، TZVPN در همان خانواده‌ی پروژه‌های ضد سانسور قرار می‌گیرد که [Tor](https://torproject.org)، [Psiphon](https://psiphon.ca) و [Outline VPN](https://getoutline.org) متعلق به آن هستند؛ با این تفاوت مهم که TZVPN **فقط کلاینت** است: شبکه یا سرور مرکزی متعلق به یک سازمان خاص وجود ندارد و سرور را یا خودتان راه‌اندازی می‌کنید (با [SlipGate](https://github.com/Iddy29/slipgate) فقط چند دقیقه طول می‌کشد) یا از طریق فردی مورد اعتماد دریافت می‌کنید. این مدل سه مزیت اصلی دارد:
+از نظر فلسفه، TZVPN در همان خانواده‌ی پروژه‌های ضد سانسور قرار می‌گیرد که [Tor](https://torproject.org)، [Psiphon](https://psiphon.ca) و [Outline VPN](https://getoutline.org) متعلق به آن هستند؛ با این تفاوت مهم که TZVPN **فقط کلاینت** است: شبکه یا سرور مرکزی متعلق به یک سازمان خاص وجود ندارد و سرور را یا خودتان راه‌اندازی می‌کنید (با [CyberGate](https://github.com/Iddy29/tzvpn/tree/main/cybergate) فقط چند دقیقه طول می‌کشد) یا از طریق فردی مورد اعتماد دریافت می‌کنید. این مدل سه مزیت اصلی دارد:
 
 - **حریم خصوصی**: ترافیک شما از سروری عبور می‌کند که خودتان یا کسی که می‌شناسید کنترل می‌کند، نه یک شرکت ناشناس.
 - **مقیاس‌پذیری و دوام**: چون هیچ زیرساخت متمرکزی برای فیلتر کردن وجود ندارد، حتی اگر یک سرور بلاک شود، یک IP جدید و تغییر یک رکورد DNS کافی است.
@@ -663,18 +663,18 @@ TZVPN در دو نسخه عرضه می‌شود — تفاوت در حجم APK �
 
 ---
 
-## ۵. سرور لازم است — از SlipGate استفاده کنید
+## ۵. سرور لازم است — از CyberGate استفاده کنید
 
 TZVPN *کلاینت* است. برای کار به یک **سرور** نیاز دارد که تونل سازگار را اجرا کند.
 
-روش رسمی و پشتیبانی‌شده برای راه‌اندازی سرور **SlipGate** است — یک نصاب لینوکسی تک‌دستوری که سمت سرور تمام پروتکل‌های TZVPN را راه می‌اندازد.
+روش رسمی و پشتیبانی‌شده برای راه‌اندازی سرور **CyberGate** است — یک نصاب لینوکسی تک‌دستوری که سمت سرور تمام پروتکل‌های TZVPN را راه می‌اندازد.
 
-> https://github.com/Iddy29/slipgate
+> https://github.com/Iddy29/tzvpn/tree/main/cybergate
 
-راهنمای جداگانه‌ی SlipGate در کنار همین سند منتشر شده است. خلاصه: یک VPS ۵ دلاری بگیرید، دامنه‌اش را به آن وصل کنید، یک دستور نصب اجرا کنید، یک کاربر بسازید، و SlipGate یک لینک `tzvpn://` می‌دهد که مستقیم در اپ پیست می‌شود.
+راهنمای جداگانه‌ی CyberGate در کنار همین سند منتشر شده است. خلاصه: یک VPS ۵ دلاری بگیرید، دامنه‌اش را به آن وصل کنید، یک دستور نصب اجرا کنید، یک کاربر بسازید، و CyberGate یک لینک `tzvpn://` می‌دهد که مستقیم در اپ پیست می‌شود.
 
 اگر سرور خودتان را راه نمی‌اندازید، می‌توانید:
-- از دوستی که SlipGate دارد لینک `tzvpn://` بگیرید، یا
+- از دوستی که CyberGate دارد لینک `tzvpn://` بگیرید، یا
 - از لینک تستی عمومی که گاهی در [Iddy29/tzvpn](https://github.com/Iddy29/tzvpn) منتشر می‌شود استفاده کنید.
 
 ---
@@ -764,11 +764,11 @@ TZVPN *کلاینت* است. برای کار به یک **سرور** نیاز د�
 پروب DNS را کامل رد می‌کند. برای هر IP کاندید فقط یک تونل واقعی باز می‌کند و یک درخواست HTTP می‌فرستد. وقتی از قبل لیست IPهای «شناخته‌شده‌ی تونل-سازگار» دارید و فقط می‌خواهید بدانید کدام در حال حاضر سریع به سرور خاص شما می‌رسد، این را انتخاب کنید.
 
 #### Prism
-*«اسکن سرور-تأییدشده: فقط ریزالورهایی نمایش داده می‌شوند که به‌صورت رمزنگاری‌شده اثبات کنند به سرور خاص شما می‌رسند. به نصب SlipGate روی سرور نیاز دارد.»*
+*«اسکن سرور-تأییدشده: فقط ریزالورهایی نمایش داده می‌شوند که به‌صورت رمزنگاری‌شده اثبات کنند به سرور خاص شما می‌رسند. به نصب CyberGate روی سرور نیاز دارد.»*
 
-قوی‌ترین حالت. پروب‌های HMAC-authenticated می‌فرستد که فقط یک سرور SlipGate واقعی می‌تواند درست امضا کند، پس ریزالوری که «کار می‌کند» اما در واقع ترافیک را به یک middlebox مهاجم می‌رساند، در این چک رد می‌شود. هر ریزالور N بار پروب می‌شود؛ ریزالورهایی که ≥ *threshold* پاسخ امضاشده می‌گیرند، عبور می‌کنند. وقتی به transparent-proxy interception شک دارید یا می‌خواهید جلوی hijacking تونل را بگیرید، این را انتخاب کنید.
+قوی‌ترین حالت. پروب‌های HMAC-authenticated می‌فرستد که فقط یک سرور CyberGate واقعی می‌تواند درست امضا کند، پس ریزالوری که «کار می‌کند» اما در واقع ترافیک را به یک middlebox مهاجم می‌رساند، در این چک رد می‌شود. هر ریزالور N بار پروب می‌شود؛ ریزالورهایی که ≥ *threshold* پاسخ امضاشده می‌گیرند، عبور می‌کنند. وقتی به transparent-proxy interception شک دارید یا می‌خواهید جلوی hijacking تونل را بگیرید، این را انتخاب کنید.
 
-فقط وقتی پروفایل انتخاب‌شده‌تان کلید عمومی معتبر دارد و سرور شما [SlipGate](https://github.com/Iddy29/slipgate) اجرا می‌کند، در دسترس است.
+فقط وقتی پروفایل انتخاب‌شده‌تان کلید عمومی معتبر دارد و سرور شما [CyberGate](https://github.com/Iddy29/tzvpn/tree/main/cybergate) اجرا می‌کند، در دسترس است.
 
 ---
 
@@ -1086,7 +1086,7 @@ TZVPN سه نوع URI برای خروجی دارد. این‌ها **هم‌ار�
 
 قواعد کلی:
 
-- برای پخش گسترده‌تر، روی **VPS خریداری‌شده از خارج کشور** و دامنه‌ی ثبت‌شده در **ریجیسترار خارج از کشور** میزبانی کنید. روی همان VPS، **Warp را از داخل SlipGate فعال کنید** تا ترافیک خروجی سرور از پشت Cloudflare Warp عبور کند و IP واقعی VPS لو نرود.
+- برای پخش گسترده‌تر، روی **VPS خریداری‌شده از خارج کشور** و دامنه‌ی ثبت‌شده در **ریجیسترار خارج از کشور** میزبانی کنید. روی همان VPS، **Warp را از داخل CyberGate فعال کنید** تا ترافیک خروجی سرور از پشت Cloudflare Warp عبور کند و IP واقعی VPS لو نرود.
 - کانفیگ را **خصوصی** بفرستید (تک به تک، در چت رمزنگاری‌شده‌ی end-to-end) — نه در گروه، نه در سایت، نه پین‌شده در کانال.
 - قابلیت‌های قفل `tzvpn-enc://` (انقضا، قید به دستگاه، مخفی‌بودن resolverها، عدم بازنشر) را برای **کند کردن سوءاستفاده** به کار ببرید، نه برای اینکه کانفیگ را عمومی کنید.
 
@@ -1107,8 +1107,8 @@ TZVPN سه نوع URI برای خروجی دارد. این‌ها **هم‌ار�
 - TZVPN را فقط از **کانال رسمی تلگرام** یا **گیت‌هاب** دانلود کنید.
 - لینک `tzvpn://` خود را با غریبه‌ها به اشتراک نگذارید.
 - موقع پشتیبان‌گیری از **Export رمزشده** استفاده کنید.
-- اصالت سرور را با **Prism** (اسکن سرور-تأییدشده) اعتبارسنجی کنید — با SlipGate کار می‌کند.
-- اگر سرور خودتان را اجرا می‌کنید: هیچ‌وقت `root` یا هر اکانت shell را به‌عنوان credential VPN ندهید — همیشه با SlipGate کاربر مخصوص بسازید.
+- اصالت سرور را با **Prism** (اسکن سرور-تأییدشده) اعتبارسنجی کنید — با CyberGate کار می‌کند.
+- اگر سرور خودتان را اجرا می‌کنید: هیچ‌وقت `root` یا هر اکانت shell را به‌عنوان credential VPN ندهید — همیشه با CyberGate کاربر مخصوص بسازید.
 
 مخزن: https://github.com/Iddy29/tzvpn
 سورس: https://github.com/Iddy29/tzvpn

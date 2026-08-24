@@ -417,7 +417,7 @@ func interactiveVerifyScan() {
 	fmt.Println()
 	fmt.Println("  ── Prism ─────────────────────────────────────────")
 	fmt.Println()
-	fmt.Println("  Requires SlipGate running on the server.")
+	fmt.Println("  Requires CyberGate running on the server.")
 	fmt.Println("  Sends multiple HMAC probes per resolver to verify")
 	fmt.Println("  authenticity and filter unreliable resolvers.")
 	fmt.Println()

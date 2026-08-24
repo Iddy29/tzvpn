@@ -537,7 +537,7 @@ func isTimeout(err error) bool {
 // subdomain encoding, so probes are visually indistinguishable from real traffic.
 var verifyBase32 = base32.NewEncoding("abcdefghijklmnopqrstuvwxyz234567").WithPadding(base32.NoPadding)
 
-// testVerify probes a resolver using the slipgate HMAC challenge-response protocol.
+// testVerify probes a resolver using the cybergate HMAC challenge-response protocol.
 //
 // Query format:  <base32(nonce[16] || HMAC(key,nonce)[:16])>.<domain>  (TXT)
 // Response:      TXT containing raw HMAC(key, nonce||0x01) (32 bytes), possibly padded.

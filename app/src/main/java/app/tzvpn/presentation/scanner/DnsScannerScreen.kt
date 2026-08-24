@@ -612,9 +612,9 @@ private fun ScanModeToggle(
                 withStyle(SpanStyle(color = textColor, fontSize = textStyle.fontSize)) {
                     append("Server-verified scan: only resolvers that cryptographically prove they reach your specific server are shown. Requires ")
                 }
-                pushStringAnnotation(tag = "URL", annotation = "https://github.com/anonvector/slipgate")
+                pushStringAnnotation(tag = "URL", annotation = "https://github.com/Iddy29/tzvpn/tree/main/cybergate")
                 withStyle(SpanStyle(color = linkColor, fontSize = textStyle.fontSize)) {
-                    append("SlipGate")
+                    append("CyberGate")
                 }
                 pop()
                 withStyle(SpanStyle(color = textColor, fontSize = textStyle.fontSize)) {

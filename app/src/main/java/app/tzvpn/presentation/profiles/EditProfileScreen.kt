@@ -3203,7 +3203,7 @@ fun EditProfileScreen(
                     onClick = {
                         val intent = android.content.Intent(
                             android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse("https://github.com/anonvector/slipgate")
+                            android.net.Uri.parse("https://github.com/Iddy29/tzvpn/tree/main/cybergate")
                         )
                         context.startActivity(intent)
                     },
