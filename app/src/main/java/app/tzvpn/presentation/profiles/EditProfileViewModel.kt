@@ -55,7 +55,7 @@ data class DohTestResult(
 enum class DohTestScope { ALL, PRESETS, CUSTOM }
 
 /**
- * UI-only bridge type selector. Not persisted â€” the actual bridge lines are stored
+ * UI-only bridge type selector. Not persisted — the actual bridge lines are stored
  * in torBridgeLines and transport is auto-detected at runtime.
  */
 enum class TorBridgeType(val displayName: String) {
@@ -68,7 +68,7 @@ enum class TorBridgeType(val displayName: String) {
     CUSTOM("Custom")
 }
 
-/** SSH transport mode â€” mutually exclusive. Only shown for SSH-only tunnel type. */
+/** SSH transport mode — mutually exclusive. Only shown for SSH-only tunnel type. */
 enum class SshTransport(val displayName: String) {
     DIRECT("Direct"),
     HTTP_PROXY("HTTP Proxy"),
@@ -79,7 +79,7 @@ data class EditProfileUiState(
     val profileId: Long? = null,
     val name: String = "",
     val domain: String = "",
-    val resolvers: String = "", // Format: "host:port,host:port" â€” auto-filled from system DNS
+    val resolvers: String = "", // Format: "host:port,host:port" — auto-filled from system DNS
     val authoritativeMode: Boolean = false,
     val keepAliveInterval: String = "5000",
     val congestionControl: CongestionControl = CongestionControl.BBR,
@@ -622,7 +622,7 @@ class EditProfileViewModel @Inject constructor(
 
     /**
      * Apply a transport hint from a BOTH-mode scan. Only overrides when the profile's
-     * current transport is UDP or TCP â€” leaves DoT/DoH selections untouched since the
+     * current transport is UDP or TCP — leaves DoT/DoH selections untouched since the
      * scan didn't test them.
      */
     fun applyScanTransportHint(hint: String) {
@@ -880,7 +880,7 @@ class EditProfileViewModel @Inject constructor(
                         error = null
                     )
                 } else {
-                    // API unreachable â€” fall back to Snowflake (uses domain fronting, harder to block)
+                    // API unreachable — fall back to Snowflake (uses domain fronting, harder to block)
                     _uiState.value = _uiState.value.copy(
                         isAskingTor = false,
                         torBridgeType = TorBridgeType.SNOWFLAKE,
@@ -890,7 +890,7 @@ class EditProfileViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                // API unreachable â€” fall back to Snowflake (uses domain fronting, harder to block)
+                // API unreachable — fall back to Snowflake (uses domain fronting, harder to block)
                 _uiState.value = _uiState.value.copy(
                     isAskingTor = false,
                     torBridgeType = TorBridgeType.SNOWFLAKE,
@@ -1096,7 +1096,7 @@ class EditProfileViewModel @Inject constructor(
      * Parse /circumvention/builtin response.
      * Format: {"obfs4": ["obfs4 ...", ...], "snowflake": ["snowflake ...", ...], "webtunnel": [...]}
      * Takes up to 2 bridges from each type, priority: webtunnel > obfs4 > meek
-     * (snowflake excluded â€” uses Go library PT, not lyrebird; already available as built-in type)
+     * (snowflake excluded — uses Go library PT, not lyrebird; already available as built-in type)
      */
     private fun executeBuiltinRequest(client: OkHttpClient, request: Request): List<String> {
         client.newCall(request).execute().use { response ->
@@ -1170,7 +1170,7 @@ class EditProfileViewModel @Inject constructor(
             val client = DohBridge.createHttpClient()
             val completed = java.util.concurrent.ConcurrentHashMap<String, DohTestResult>()
 
-            // Launch all tests in parallel â€” results stream in as each completes
+            // Launch all tests in parallel — results stream in as each completes
             val jobs = allServers.map { preset ->
                 launch(Dispatchers.IO) {
                     val result = testSingleDohServer(preset, client)
@@ -1325,7 +1325,7 @@ class EditProfileViewModel @Inject constructor(
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return null
         val linkProperties = connectivityManager.getLinkProperties(network) ?: return null
-        // Pick the first IPv4 DNS server â€” IPv6 resolvers are not supported
+        // Pick the first IPv4 DNS server — IPv6 resolvers are not supported
         return linkProperties.dnsServers
             .firstOrNull { it is java.net.Inet4Address }
             ?.hostAddress
@@ -1387,7 +1387,7 @@ class EditProfileViewModel @Inject constructor(
             }
         }
 
-        // Resolver validation â€” skip when saving for scanner since the whole point
+        // Resolver validation — skip when saving for scanner since the whole point
         // is to find resolvers. Also skip for tunnel types that don't need resolvers.
         val skipResolvers = forScanner || state.tunnelType == TunnelType.SSH || state.tunnelType == TunnelType.DOH ||
                 state.tunnelType == TunnelType.SNOWFLAKE || state.isNaiveBased || state.isSocks5 || state.isVless || state.isHysteria2 ||
@@ -1709,7 +1709,7 @@ class EditProfileViewModel @Inject constructor(
             val port = trimmed.substring(lastColon + 1).trim().toIntOrNull() ?: 53
             return host to port
         }
-        // Bare host (no port) â€” could be IPv6 without brackets
+        // Bare host (no port) — could be IPv6 without brackets
         return trimmed to 53
     }
 
@@ -1724,7 +1724,7 @@ class EditProfileViewModel @Inject constructor(
                 tunnelType == TunnelType.NOIZDNS || tunnelType == TunnelType.NOIZDNS_SSH ||
                 tunnelType == TunnelType.SLIPSTREAM || tunnelType == TunnelType.SLIPSTREAM_SSH
 
-        // SSH accepts hostnames and IPs â€” no DNS domain validation needed
+        // SSH accepts hostnames and IPs — no DNS domain validation needed
         if (!isDnsTunnel) return null
 
         // Must not be an IP address
@@ -1824,7 +1824,7 @@ class EditProfileViewModel @Inject constructor(
             obfs4 212.83.43.74:443 39562501228A4D5E27FCA4C0C81A01EE23AE3EE4 cert=PBwr+S8JTVZo6MPdHnkTwXJPILWADLqfMGoVvhZClMq/Urndyd42BwX9YFJHZnBB3H0XCw iat-mode=1
         """.trimIndent()
 
-        // Built-in meek_lite bridge (CDN77 domain fronting, from Tor Browser defaults â€” Bug 41508)
+        // Built-in meek_lite bridge (CDN77 domain fronting, from Tor Browser defaults — Bug 41508)
         const val DEFAULT_MEEK_BRIDGE = "meek_lite 192.0.2.20:80 url=https://1603026938.rsc.cdn77.org front=www.phpmyadmin.net utls=HelloRandomizedALPN"
 
         /**
@@ -1852,7 +1852,7 @@ class EditProfileViewModel @Inject constructor(
             return "Resolver cannot be empty"
         }
 
-        // Block IPv6 â€” not supported by the tunnel stack
+        // Block IPv6 — not supported by the tunnel stack
         if (trimmed.startsWith("[") || trimmed.count { it == ':' } > 1) {
             return "IPv6 resolvers are not supported"
         }
@@ -1985,7 +1985,7 @@ class EditProfileViewModel @Inject constructor(
             onResult(false)
             return
         }
-        // Correct password â€” unlock permanently
+        // Correct password — unlock permanently
         viewModelScope.launch {
             val profileId = state.profileId ?: return@launch
             val profile = getProfileByIdUseCase(profileId) ?: return@launch

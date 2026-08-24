@@ -49,7 +49,7 @@ object Hysteria2Bridge {
                 obfsPassword,
                 insecure
             )
-            c.Start()
+            c.start()
             client = c
             running.set(true)
             app.tzvpn.util.AppLog.i(TAG, "Hysteria2 bridge started")
@@ -64,12 +64,12 @@ object Hysteria2Bridge {
     fun stop() {
         running.set(false)
         try {
-            client?.Stop()
+            client?.stop()
         } catch (_: Exception) {}
         client = null
     }
 
-    fun isRunning(): Boolean = running.get() && client?.IsRunning() == true
+    fun isRunning(): Boolean = running.get() && client?.isRunning() == true
     fun isClientHealthy(): Boolean = isRunning()
     fun getTunnelTxBytes(): Long = tunnelTxBytes.get()
     fun getTunnelRxBytes(): Long = tunnelRxBytes.get()

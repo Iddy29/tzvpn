@@ -60,7 +60,7 @@ object VlessRealityBridge {
                 shortId,
                 fingerprint.ifBlank { "chrome" }
             )
-            c.Start()
+            c.start()
             client = c
             running.set(true)
             app.tzvpn.util.AppLog.i(TAG, "VLESS+REALITY bridge started")
@@ -75,12 +75,12 @@ object VlessRealityBridge {
     fun stop() {
         running.set(false)
         try {
-            client?.Stop()
+            client?.stop()
         } catch (_: Exception) {}
         client = null
     }
 
-    fun isRunning(): Boolean = running.get() && client?.IsRunning() == true
+    fun isRunning(): Boolean = running.get() && client?.isRunning() == true
     fun isClientHealthy(): Boolean = isRunning()
     fun getTunnelTxBytes(): Long = tunnelTxBytes.get()
     fun getTunnelRxBytes(): Long = tunnelRxBytes.get()

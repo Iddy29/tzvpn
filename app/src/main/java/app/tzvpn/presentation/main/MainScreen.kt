@@ -932,7 +932,7 @@ fun MainScreen(
                         )
                         AddMenuGridItem(
                             modifier = tileMod,
-                            icon = Icons.Default.Bolt,
+                            icon = Icons.Default.Air,
                             title = "Hysteria2",
                             onClick = {
                                 showAddMenu = false

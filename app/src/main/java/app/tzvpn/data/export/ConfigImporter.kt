@@ -225,7 +225,7 @@ class ConfigImporter @Inject constructor() {
                             profiles.add(profile)
                             val version = decoded.split(FIELD_DELIMITER).firstOrNull()?.toIntOrNull()
                             if (version != null && version > CURRENT_MAX_VERSION) {
-                                warnings.add("Line ${index + 1}: Exported from a newer app version â€” some settings may be missing")
+                                warnings.add("Line ${index + 1}: Exported from a newer app version — some settings may be missing")
                             }
                         }
                     }
@@ -258,7 +258,7 @@ class ConfigImporter @Inject constructor() {
                         profiles.add(profile)
                         val version = decoded.split(FIELD_DELIMITER).firstOrNull()?.toIntOrNull()
                         if (version != null && version > CURRENT_MAX_VERSION) {
-                            warnings.add("Line ${index + 1}: Exported from a newer app version â€” some settings may be missing")
+                            warnings.add("Line ${index + 1}: Exported from a newer app version — some settings may be missing")
                         }
                     }
                 }
@@ -930,7 +930,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns â€” ignored (removed, now global setting)
+        // fields[20] was useServerDns — ignored (removed, now global setting)
 
         if (name.isBlank()) {
             return ProfileParseResult.Error("Line $lineNum: Profile name is required")
@@ -1034,7 +1034,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns â€” ignored (removed, now global setting)
+        // fields[20] was useServerDns — ignored (removed, now global setting)
         val dohUrl = fields[21]
 
         if (name.isBlank()) {
@@ -1149,7 +1149,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns â€” ignored (removed, now global setting)
+        // fields[20] was useServerDns — ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
 
@@ -1286,7 +1286,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns â€” ignored (removed, now global setting)
+        // fields[20] was useServerDns — ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -1425,7 +1425,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns â€” ignored (removed, now global setting)
+        // fields[20] was useServerDns — ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -1571,7 +1571,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns â€” ignored (removed, now global setting)
+        // fields[20] was useServerDns — ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -1718,7 +1718,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns â€” ignored (removed, now global setting)
+        // fields[20] was useServerDns — ignored (removed, now global setting)
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -1739,7 +1739,7 @@ class ConfigImporter @Inject constructor() {
         val naivePassword = try {
             String(Base64.decode(fields[30], Base64.NO_WRAP), Charsets.UTF_8)
         } catch (_: Exception) { "" }
-        // fields[31] was naiveSni (removed) â€” ignored if present
+        // fields[31] was naiveSni (removed) — ignored if present
 
         if (name.isBlank()) {
             return ProfileParseResult.Error("Line $lineNum: Profile name is required")
@@ -1882,7 +1882,7 @@ class ConfigImporter @Inject constructor() {
         val sshPassword = fields[16]
         val sshPort = fields[17].toIntOrNull() ?: 22
         val sshHost = fields[19]
-        // fields[20] was useServerDns â€” ignored
+        // fields[20] was useServerDns — ignored
         val dohUrl = fields[21]
         val dnsTransport = DnsTransport.fromValue(fields[22])
         val sshAuthType = SshAuthType.fromValue(fields[23])
@@ -2213,7 +2213,7 @@ class ConfigImporter @Inject constructor() {
      * vless://uuid@server:port?type=ws&security=tls&path=/ws&host=domain&sni=domain&fp=chrome#name
      *
      * Supported query params:
-     * - type: transport type (ws, tcp, grpc) â€” only ws is supported
+     * - type: transport type (ws, tcp, grpc) — only ws is supported
      * - security: tls, none
      * - path: WebSocket path
      * - host: WebSocket Host header / TLS SNI
@@ -2241,7 +2241,7 @@ class ConfigImporter @Inject constructor() {
 
             // Split userinfo@host:port?params
             val atIdx = mainPart.indexOf('@')
-            if (atIdx < 0) return ProfileParseResult.Error("Line $lineNum: Invalid VLESS URI â€” missing UUID")
+            if (atIdx < 0) return ProfileParseResult.Error("Line $lineNum: Invalid VLESS URI — missing UUID")
             val uuid = mainPart.substring(0, atIdx)
 
             val afterAt = mainPart.substring(atIdx + 1)
@@ -2262,7 +2262,7 @@ class ConfigImporter @Inject constructor() {
             } else {
                 val colonIdx = hostPort.lastIndexOf(':')
                 if (colonIdx > 0 && hostPort.indexOf(':') == colonIdx) {
-                    // Single colon â€” host:port
+                    // Single colon — host:port
                     server = hostPort.substring(0, colonIdx)
                     port = hostPort.substring(colonIdx + 1).toIntOrNull() ?: 443
                 } else {
@@ -2306,13 +2306,13 @@ class ConfigImporter @Inject constructor() {
             val normalizedTransport = when (transport) {
                 "ws", "websocket" -> "ws"
                 "tcp", "raw" -> "tcp"
-                else -> return ProfileParseResult.Warning("Line $lineNum: Only VLESS over WebSocket is supported â€” '$transport' transport is not available")
+                else -> return ProfileParseResult.Warning("Line $lineNum: Only VLESS over WebSocket is supported — '$transport' transport is not available")
             }
 
-            // Only WebSocket transport is supported â€” except REALITY, which
+            // Only WebSocket transport is supported — except REALITY, which
             // always uses raw TCP (the standard REALITY setup).
             if (normalizedTransport != "ws" && security != "reality") {
-                return ProfileParseResult.Warning("Line $lineNum: Only VLESS over WebSocket is supported â€” this config uses '$transport' transport")
+                return ProfileParseResult.Warning("Line $lineNum: Only VLESS over WebSocket is supported — this config uses '$transport' transport")
             }
 
             val normalizedSecurity = when (security) {
@@ -2336,9 +2336,9 @@ class ConfigImporter @Inject constructor() {
             }
 
             // domain  = WS Host header (routing hostname, used as SNI when vlessSni is empty)
-            // vlessSni = explicit TLS SNI â€” only stored when the URI's sni=
+            // vlessSni = explicit TLS SNI — only stored when the URI's sni=
             //            differs from host= (legitimate CDN setups where the
-            //            cert hostname â‰  the origin routing hostname, or a
+            //            cert hostname ≠ the origin routing hostname, or a
             //            DPI-evasion decoy on direct servers).
             val profile = ServerProfile(
                 name = profileName,
@@ -2474,8 +2474,8 @@ class ConfigImporter @Inject constructor() {
         val sniFragmentStrategy = if (fields.size > 69 && fields[69].isNotBlank()) fields[69] else "sni_split"
         // SNI fragment delay (position 70)
         val sniFragmentDelayMs = if (fields.size > 70) fields[70].toIntOrNull() ?: 100 else 100
-        // Legacy "fake SNI" field (position 71). v25â€“v27 used one SNI field
-        // that got overloaded by the URI importer â€” any sni= that differed
+        // Legacy "fake SNI" field (position 71). v25–v27 used one SNI field
+        // that got overloaded by the URI importer — any sni= that differed
         // from host= was stuffed here. Map it to the single vlessSni going
         // forward. Only VLESS profiles ever populated position 71, so this is
         // a no-op for other tunnel types.
@@ -2566,7 +2566,7 @@ class ConfigImporter @Inject constructor() {
     }
 
     // v43 adds VLESS-over-REALITY fields (positions 79-81) and Hysteria2
-    // fields (positions 82-86). All are trailing additions â€” older versions
+    // fields (positions 82-86). All are trailing additions — older versions
     // parse fine because every field has a safe default.
     private fun parseProfileV43(fields: List<String>, lineNum: Int): ProfileParseResult {
         val baseResult = parseProfileV28(fields, lineNum)

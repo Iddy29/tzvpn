@@ -259,10 +259,10 @@ class ConfigExporter @Inject constructor() {
             if (profile.sniFragmentEnabled) "1" else "0",
             sanitize(profile.sniFragmentStrategy),
             profile.sniFragmentDelayMs.toString(),
-            // v25â€“v27 held the SNI here. v28 moves it to the trailing vlessSni
+            // v25–v27 held the SNI here. v28 moves it to the trailing vlessSni
             // field so position 71 stays empty in all new exports. Kept in the
             // layout so v27 readers can still parse v28 output (they'd just
-            // see SNI="", falling back to domain â€” usually fine).
+            // see SNI="", falling back to domain — usually fine).
             "",
             // v26: DPI evasion options
             if (profile.chPaddingEnabled) "1" else "0",
@@ -276,7 +276,7 @@ class ConfigExporter @Inject constructor() {
             profile.tcpMaxSeg.toString(),
             // v28: Single TLS SNI for VLESS. Empty = the bridge falls back to
             // profile.domain (the WS Host). Replaces the legacy position-71
-            // field that v25â€“v27 used.
+            // field that v25–v27 used.
             sanitize(profile.vlessSni),
             // v43: VLESS over REALITY
             sanitize(profile.vlessRealityPubKey),

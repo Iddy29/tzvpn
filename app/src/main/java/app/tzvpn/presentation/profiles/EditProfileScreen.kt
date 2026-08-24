@@ -145,7 +145,7 @@ fun EditProfileScreen(
         when (selectedResolversTransportHint) {
             "UDP", "TCP" -> viewModel.applyScanTransportHint(selectedResolversTransportHint)
             "MIXED" -> snackbarHostState.showSnackbar(
-                "Selected resolvers don't share a transport â€” pick UDP or TCP manually."
+                "Selected resolvers don't share a transport — pick UDP or TCP manually."
             )
             else -> {}
         }
@@ -228,7 +228,7 @@ fun EditProfileScreen(
                 CircularProgressIndicator()
             }
         } else if (uiState.isLocked) {
-            // Locked profile view â€” only the header is in a Card; the rest of
+            // Locked profile view — only the header is in a Card; the rest of
             // the sections (DNS, Credentials) match the non-locked screen's
             // flat titleMedium-header style.
             Column(
@@ -534,7 +534,7 @@ fun EditProfileScreen(
                                 }
                             }
 
-                            // DNS Query Size (locked profiles, not for VayDNS â€” it uses QNAME length instead).
+                            // DNS Query Size (locked profiles, not for VayDNS — it uses QNAME length instead).
                             // Hidden when Auto is on.
                             if (uiState.isDnsttOrNoizOrVaydnsBased && !uiState.isVaydnsBased && !uiState.dnsAutoTune) {
                                 var showMtuDialogLocked by remember { mutableStateOf(false) }
@@ -569,11 +569,11 @@ fun EditProfileScreen(
 
                                 if (showMtuDialogLocked) {
                                     val mtuPresetsLocked = listOf(
-                                        0 to "Full capacity â€” fastest, largest queries",
-                                        100 to "Large â€” good balance",
-                                        80 to "Medium â€” less conspicuous",
-                                        60 to "Small â€” stealthier, slower",
-                                        50 to "Minimum â€” most stealthy, slowest"
+                                        0 to "Full capacity — fastest, largest queries",
+                                        100 to "Large — good balance",
+                                        80 to "Medium — less conspicuous",
+                                        60 to "Small — stealthier, slower",
+                                        50 to "Minimum — most stealthy, slowest"
                                     )
                                     val isCustomLocked = mtuPresetsLocked.none { it.first == uiState.dnsPayloadSize }
                                     var customMtuTextLocked by remember { mutableStateOf(if (isCustomLocked) uiState.dnsPayloadSize.toString() else "") }
@@ -637,7 +637,7 @@ fun EditProfileScreen(
                                                         onValueChange = { customMtuTextLocked = it.filter { c -> c.isDigit() }.take(3) },
                                                         enabled = useCustomLocked,
                                                         label = { Text("Custom") },
-                                                        placeholder = { Text("50â€“120") },
+                                                        placeholder = { Text("50–120") },
                                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                                         singleLine = true,
                                                         modifier = Modifier
@@ -671,7 +671,7 @@ fun EditProfileScreen(
                                 }
                             }
 
-                            // Auto toggle for DNSTT/NoizDNS (locked) â€” sits below DNS Query Size.
+                            // Auto toggle for DNSTT/NoizDNS (locked) — sits below DNS Query Size.
                             // Hidden when Authoritative is on (probe would be a no-op).
                             if (uiState.isDnsttOrNoizBased && !uiState.dnsttAuthoritative) {
                                 Row(
@@ -769,7 +769,7 @@ fun EditProfileScreen(
                                     }
                                 }
 
-                                // Auto toggle (locked, VayDNS) â€” sits below Record Type.
+                                // Auto toggle (locked, VayDNS) — sits below Record Type.
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -794,7 +794,7 @@ fun EditProfileScreen(
                                     )
                                 }
 
-                                // QNAME Length â€” hidden when Auto is on.
+                                // QNAME Length — hidden when Auto is on.
                                 var showQnameDialogLocked by remember { mutableStateOf(false) }
                                 if (!uiState.dnsAutoTune) {
                                 Row(
@@ -813,10 +813,10 @@ fun EditProfileScreen(
                                         )
                                         Text(
                                             text = "${uiState.vaydnsMaxQnameLen} bytes" + when {
-                                                uiState.vaydnsMaxQnameLen <= 80 -> " â€” stealthy"
-                                                uiState.vaydnsMaxQnameLen <= 120 -> " â€” balanced"
-                                                uiState.vaydnsMaxQnameLen <= 180 -> " â€” fast"
-                                                else -> " â€” maximum"
+                                                uiState.vaydnsMaxQnameLen <= 80 -> " — stealthy"
+                                                uiState.vaydnsMaxQnameLen <= 120 -> " — balanced"
+                                                uiState.vaydnsMaxQnameLen <= 180 -> " — fast"
+                                                else -> " — maximum"
                                             },
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -889,9 +889,9 @@ fun EditProfileScreen(
                                                         }
                                                     },
                                                     label = { Text("Custom value") },
-                                                    placeholder = { Text("$minQnameâ€“$maxQname") },
+                                                    placeholder = { Text("$minQname–$maxQname") },
                                                     isError = customError,
-                                                    supportingText = if (customError) {{ Text("Must be $minQnameâ€“$maxQname") }} else null,
+                                                    supportingText = if (customError) {{ Text("Must be $minQname–$maxQname") }} else null,
                                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                                     singleLine = true,
                                                     modifier = Modifier.fillMaxWidth()
@@ -922,7 +922,7 @@ fun EditProfileScreen(
                                 }
                                 } // end if (!uiState.dnsAutoTune)
 
-                                // Rate limit â€” hidden when Auto is on.
+                                // Rate limit — hidden when Auto is on.
                                 if (!uiState.dnsAutoTune) {
                                     OutlinedTextField(
                                         value = uiState.vaydnsRps,
@@ -1024,7 +1024,7 @@ fun EditProfileScreen(
                     }
                 }
 
-                // Credentials section â€” editable username and password (masked)
+                // Credentials section — editable username and password (masked)
                 val showSshCreds = uiState.useSsh && uiState.sshAuthType == SshAuthType.PASSWORD
                 val showSocksCreds = uiState.isSocks5 ||
                         (uiState.showConnectionMethod && !uiState.useSsh && !uiState.isNaiveBased)
@@ -1449,7 +1449,7 @@ fun EditProfileScreen(
 
                         if (uiState.sniFragmentEnabled) {
                             // Strategies are ordered by effectiveness against modern
-                            // reassembling DPIs â€” chunkier and reorder-based modes tend
+                            // reassembling DPIs — chunkier and reorder-based modes tend
                             // to outperform simple splits.
                             FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1457,9 +1457,9 @@ fun EditProfileScreen(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 listOf(
-                                    "micro" to "Micro â˜…â˜…",
-                                    "multi" to "Multi â˜…",
-                                    "disorder" to "Disorder â˜…",
+                                    "micro" to "Micro ★★",
+                                    "multi" to "Multi ★",
+                                    "disorder" to "Disorder ★",
                                     "fake" to "Fake",
                                     "sni_split" to "SNI Split",
                                     "half" to "Half"
@@ -1472,7 +1472,7 @@ fun EditProfileScreen(
                                 }
                             }
                             Text(
-                                text = "â˜…â˜… = strongest (1 byte per TLS record + MSS cap, trades throughput). â˜… = recommended against strict DPI.",
+                                text = "★★ = strongest (1 byte per TLS record + MSS cap, trades throughput). ★ = recommended against strict DPI.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1481,7 +1481,7 @@ fun EditProfileScreen(
                                 onValueChange = { viewModel.updateSniFragmentDelayMs(it) },
                                 label = { Text("Fragment Delay (ms)") },
                                 placeholder = { Text("300") },
-                                supportingText = { Text("Delay between TLS fragments. 100ms works on most networks; try 300â€“500ms against strict reassembling DPI. In Micro mode this also controls per-record jitter.") },
+                                supportingText = { Text("Delay between TLS fragments. 100ms works on most networks; try 300–500ms against strict reassembling DPI. In Micro mode this also controls per-record jitter.") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.fillMaxWidth()
@@ -1492,7 +1492,7 @@ fun EditProfileScreen(
                                     onValueChange = { viewModel.updateSniSpoofTtl(it) },
                                     label = { Text("Decoy TTL (hops)") },
                                     placeholder = { Text("8") },
-                                    supportingText = { Text("Decoy packet must die between local DPI and CDN edge. Try 4â€“12 if connections fail; lower it if your CDN POP is close.") },
+                                    supportingText = { Text("Decoy packet must die between local DPI and CDN edge. Try 4–12 if connections fail; lower it if your CDN POP is close.") },
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.fillMaxWidth()
@@ -1514,7 +1514,7 @@ fun EditProfileScreen(
                                 onValueChange = { viewModel.updateTcpMaxSeg(it) },
                                 label = { Text("Force TCP MSS (advanced)") },
                                 placeholder = { Text("0") },
-                                supportingText = { Text("Cap outgoing TCP segment size so each TLS record spills across multiple segments. 0 = auto (on only in Micro / CH-padding). 40â€“1400 = explicit override; 70 is a good starting point against per-segment DPI. Smaller = slower throughput.") },
+                                supportingText = { Text("Cap outgoing TCP segment size so each TLS record spills across multiple segments. 0 = auto (on only in Micro / CH-padding). 40–1400 = explicit override; 70 is a good starting point against per-segment DPI. Smaller = slower throughput.") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.fillMaxWidth()
@@ -1951,7 +1951,7 @@ fun EditProfileScreen(
 
                 }
 
-                // Authoritative Mode toggle (DNSTT/NoizDNS only â€” VayDNS has no authoritative mode)
+                // Authoritative Mode toggle (DNSTT/NoizDNS only — VayDNS has no authoritative mode)
                 if (uiState.isDnsttOrNoizBased) {
                     Row(
                         modifier = Modifier
@@ -2021,7 +2021,7 @@ fun EditProfileScreen(
                 }
 
                 // Auto-tune DNS query parameters (DNSTT/NoizDNS/VayDNS).
-                // Hidden when Authoritative is on â€” probe would be a no-op there.
+                // Hidden when Authoritative is on — probe would be a no-op there.
                 val autoToggleVisible = uiState.isDnsttOrNoizOrVaydnsBased &&
                     !(uiState.isDnsttOrNoizBased && uiState.dnsttAuthoritative)
                 if (autoToggleVisible) {
@@ -2054,7 +2054,7 @@ fun EditProfileScreen(
                 }
 
                 // VayDNS: QNAME length slider (controls query size on the wire).
-                // Hidden when Auto is on â€” value is probed at connect time.
+                // Hidden when Auto is on — value is probed at connect time.
                 if (uiState.isVaydnsBased && !uiState.dnsAutoTune) {
                     var showQnameDialog by remember { mutableStateOf(false) }
                     Row(
@@ -2073,10 +2073,10 @@ fun EditProfileScreen(
                             )
                             Text(
                                 text = "${uiState.vaydnsMaxQnameLen} bytes" + when {
-                                    uiState.vaydnsMaxQnameLen <= 80 -> " â€” stealthy"
-                                    uiState.vaydnsMaxQnameLen <= 120 -> " â€” balanced"
-                                    uiState.vaydnsMaxQnameLen <= 180 -> " â€” fast"
-                                    else -> " â€” maximum"
+                                    uiState.vaydnsMaxQnameLen <= 80 -> " — stealthy"
+                                    uiState.vaydnsMaxQnameLen <= 120 -> " — balanced"
+                                    uiState.vaydnsMaxQnameLen <= 180 -> " — fast"
+                                    else -> " — maximum"
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -2163,9 +2163,9 @@ fun EditProfileScreen(
                                             }
                                         },
                                         label = { Text("Custom value") },
-                                        placeholder = { Text("$minQnameâ€“$maxQname") },
+                                        placeholder = { Text("$minQname–$maxQname") },
                                         isError = customError,
-                                        supportingText = if (customError) {{ Text("Must be $minQnameâ€“$maxQname") }} else null,
+                                        supportingText = if (customError) {{ Text("Must be $minQname–$maxQname") }} else null,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         singleLine = true,
                                         modifier = Modifier.fillMaxWidth()
@@ -2341,11 +2341,11 @@ fun EditProfileScreen(
                     if (showMtuDialog) {
                             // DNSTT/NoizDNS: preset list
                             val mtuPresets = listOf(
-                                0 to "Full capacity â€” fastest, largest queries",
-                                100 to "Large â€” good balance",
-                                80 to "Medium â€” less conspicuous",
-                                60 to "Small â€” stealthier, slower",
-                                50 to "Minimum â€” most stealthy, slowest"
+                                0 to "Full capacity — fastest, largest queries",
+                                100 to "Large — good balance",
+                                80 to "Medium — less conspicuous",
+                                60 to "Small — stealthier, slower",
+                                50 to "Minimum — most stealthy, slowest"
                             )
                             val isCustom = mtuPresets.none { it.first == uiState.dnsPayloadSize }
                             var customMtuText by remember { mutableStateOf(if (isCustom) uiState.dnsPayloadSize.toString() else "") }
@@ -2409,7 +2409,7 @@ fun EditProfileScreen(
                                                 onValueChange = { customMtuText = it.filter { c -> c.isDigit() }.take(3) },
                                                 enabled = useCustom,
                                                 label = { Text("Custom") },
-                                                placeholder = { Text("50â€“120") },
+                                                placeholder = { Text("50–120") },
                                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                                 singleLine = true,
                                                 modifier = Modifier
@@ -2511,7 +2511,7 @@ fun EditProfileScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Bridge type selector â€” vertical radio list
+                    // Bridge type selector — vertical radio list
                     val bridgeOptions = listOf(
                         TorBridgeType.SNOWFLAKE_AMP to Pair("Snowflake (AMP)", "Uses Google AMP cache for rendezvous"),
                         TorBridgeType.DIRECT to Pair("Direct", "Connect directly without bridges (easiest to block)"),
@@ -2712,7 +2712,7 @@ fun EditProfileScreen(
 
                 // Slipstream-specific settings
                 if (uiState.isSlipstreamBased) {
-                    // Keep-Alive Interval (hidden in authoritative mode â€” polling subsumes keep-alive)
+                    // Keep-Alive Interval (hidden in authoritative mode — polling subsumes keep-alive)
                     if (!uiState.authoritativeMode) {
                         OutlinedTextField(
                             value = uiState.keepAliveInterval,
@@ -3026,7 +3026,7 @@ fun EditProfileScreen(
                         )
                     }
 
-                    // SSH Transport settings â€” only for SSH-only tunnel type
+                    // SSH Transport settings — only for SSH-only tunnel type
                     if (uiState.isSshOnly) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
@@ -3381,7 +3381,7 @@ private fun DohServerSelector(
         onValueChange = onCustomDohUrlsChange,
         label = { Text("Custom DoH URLs to Test") },
         placeholder = { Text("https://example.com/dns-query\nhttps://other.com/dns-query") },
-        supportingText = { Text("One URL per line â€” tested alongside presets") },
+        supportingText = { Text("One URL per line — tested alongside presets") },
         singleLine = false,
         minLines = 2,
         maxLines = 5,
@@ -3483,7 +3483,7 @@ private fun DohTestDialog(
                     text = if (isTestingDoh) {
                         "Testing $completed/$total servers..."
                     } else {
-                        "$reachable/$total reachable â€” tap to select"
+                        "$reachable/$total reachable — tap to select"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
