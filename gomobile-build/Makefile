@@ -9,14 +9,18 @@ build-full:
 		-o ../app/libs/golibs-full.aar \
 		noizdns/mobile \
 		vaydns-mobile/vaydns \
-		snowflake-mobile/snowflake
+		snowflake-mobile/snowflake \
+		hysteria2-mobile/hysteria2 \
+		vlessreality-mobile/vlessreality
 
 build-lite:
 	gomobile bind -trimpath -target android/arm,android/arm64,android/amd64 -androidapi 21 \
 		-ldflags '-s -w -checklinkname=0 -extldflags -Wl,-z,max-page-size=16384,-z,common-page-size=16384' \
 		-o ../app/libs/golibs-lite.aar \
 		noizdns/mobile \
-		vaydns-mobile/vaydns
+		vaydns-mobile/vaydns \
+		hysteria2-mobile/hysteria2 \
+		vlessreality-mobile/vlessreality
 
 clean:
 	rm -f ../app/libs/golibs-full.aar ../app/libs/golibs-full-sources.jar

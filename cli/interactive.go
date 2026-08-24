@@ -835,7 +835,9 @@ func clearScreen() {
 }
 
 func isTZVPNURI(s string) bool {
-	return strings.HasPrefix(s, "tzvpn://") || strings.HasPrefix(s, "tzvpn-enc://")
+	ls := strings.ToLower(s)
+	return strings.HasPrefix(s, "tzvpn://") || strings.HasPrefix(s, "tzvpn-enc://") ||
+		strings.HasPrefix(ls, "vless://") || strings.HasPrefix(ls, "hysteria2://")
 }
 
 // formatResolverDisplay formats resolver strings for display.

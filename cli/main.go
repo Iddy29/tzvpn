@@ -124,16 +124,36 @@ type Profile struct {
 	SniFragmentStrategy  string
 	SniFragmentDelayMs   int
 	FakeSni              string
+
+	// VLESS over REALITY (config positions 70-73)
+	VlessReality    bool
+	VlessRealityPub string // base64url raw 32-byte x25519 public key
+	VlessRealitySid string // hex shortId
+	VlessRealityFp  string // uTLS fingerprint ("chrome", ...)
+
+	// Hysteria2 (config positions 74-79)
+	Hy2Auth       string
+	Hy2Obfs       string // "" or "salamander"
+	Hy2ObfsPass   string
+	Hy2Sni        string
+	Hy2Insecure   bool
+	Hy2ServerPort int
 }
 
 func parseURI(uri string) (*Profile, error) {
 	const scheme = "tzvpn://"
 	const encScheme = "tzvpn-enc://"
 	const vlessScheme = "vless://"
+	const hy2Scheme = "hysteria2://"
 
 	// Handle vless:// URIs
 	if strings.HasPrefix(strings.ToLower(uri), vlessScheme) {
 		return parseVlessURI(uri)
+	}
+
+	// Handle hysteria2:// URIs
+	if strings.HasPrefix(strings.ToLower(uri), hy2Scheme) {
+		return parseHysteria2URI(uri)
 	}
 
 	var encoded string
@@ -359,6 +379,29 @@ func parseURI(uri string) (*Profile, error) {
 	// Fake SNI (position 69)
 	if len(fields) > 69 {
 		p.FakeSni = fields[69]
+	}
+
+	// VLESS REALITY (positions 70-73)
+	if len(fields) > 73 {
+		p.VlessReality = fields[70] == "1"
+		p.VlessRealityPub = fields[71]
+		p.VlessRealitySid = fields[72]
+		p.VlessRealityFp = fields[73]
+	}
+
+	// Hysteria2 (positions 74-79)
+	if len(fields) > 79 {
+		p.Hy2Auth = fields[74]
+		p.Hy2Obfs = fields[75]
+		p.Hy2ObfsPass = fields[76]
+		p.Hy2Sni = fields[77]
+		p.Hy2Insecure = fields[78] == "1"
+		if v, err := strconv.Atoi(fields[79]); err == nil && v > 0 {
+			p.Hy2ServerPort = v
+		}
+	}
+	if p.Hy2ServerPort == 0 {
+		p.Hy2ServerPort = 443
 	}
 
 	return p, nil
@@ -656,6 +699,12 @@ func connectWithParams(uri string, portOverride int, hostOverride string, dnsOve
 		}
 		connectVless(profile)
 		return
+	case "hysteria2":
+		if portOverride > 0 {
+			profile.Port = portOverride
+		}
+		connectHysteria2(profile)
+		return
 	case "doh":
 		if portOverride > 0 {
 			profile.Port = portOverride
@@ -666,7 +715,7 @@ func connectWithParams(uri string, portOverride int, hostOverride string, dnsOve
 		return
 	case "ss", "slipstream_ssh", "snowflake", "naive":
 		fmt.Fprintf(os.Stderr, "  Error: This config uses tunnel type %q which is not supported by the CLI.\n"+
-			"  TZVPN CLI supports DNSTT, NoizDNS, VayDNS, SSH, SOCKS5, VLESS, and DoH tunnel types.\n"+
+			"  TZVPN CLI supports DNSTT, NoizDNS, VayDNS, SSH, SOCKS5, VLESS, Hysteria2, and DoH tunnel types.\n"+
 			"  Use the TZVPN app for other tunnel types.\n", profile.TunnelType)
 		return
 	default:

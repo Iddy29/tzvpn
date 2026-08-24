@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/binary"
@@ -119,6 +120,22 @@ func parseVlessURI(uri string) (*Profile, error) {
 		p.FakeSni = sni
 	}
 
+	// REALITY params: security=reality&pbk=<base64url pubkey>&sid=<hex shortId>&fp=<fingerprint>
+	if params["security"] == "reality" {
+		p.VlessReality = true
+		p.VlessRealityPub = params["pbk"]
+		p.VlessRealitySid = params["sid"]
+		p.VlessRealityFp = params["fp"]
+		if p.VlessRealityFp == "" {
+			p.VlessRealityFp = "chrome"
+		}
+		// REALITY is a direct TCP connection to the server (no CDN/WS)
+		p.SniFragmentEnabled = false
+		if v, ok := params["type"]; !ok || v == "" || v == "tcp" {
+			p.VlessWsPath = ""
+		}
+	}
+
 	return p, nil
 }
 
@@ -136,6 +153,9 @@ func connectVless(profile *Profile) {
 	fmt.Println()
 	fmt.Printf("  Profile:    %s\n", profile.Name)
 	fmt.Printf("  Type:       VLESS (CDN)\n")
+	if profile.VlessReality {
+		fmt.Printf("  Type:       VLESS + REALITY\n")
+	}
 	fmt.Printf("  CDN:        %s:%d\n", profile.VlessCdnIp, profile.VlessCdnPort)
 	fmt.Printf("  Domain:     %s\n", profile.Domain)
 	fmt.Printf("  UUID:       %s...\n", profile.VlessUuid[:8])
@@ -250,6 +270,12 @@ func handleVlessSocks5(client net.Conn, profile *Profile, uuid []byte) {
 
 	// Reply success
 	client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0})
+
+	// REALITY mode: direct TCP + REALITY handshake + raw VLESS (no WS/CDN)
+	if profile.VlessReality {
+		handleVlessReality(client, profile, uuid, destHost, destPort)
+		return
+	}
 
 	// Connect to CDN
 	cdnAddr := fmt.Sprintf("%s:%d", profile.VlessCdnIp, profile.VlessCdnPort)
@@ -366,6 +392,78 @@ func handleVlessSocks5(client net.Conn, profile *Profile, uuid []byte) {
 
 	wg.Wait()
 	tlsConn.Close()
+}
+
+// handleVlessReality tunnels one SOCKS5 connection through VLESS over REALITY
+// (raw TCP transport — the standard REALITY setup).
+func handleVlessReality(client net.Conn, profile *Profile, uuid []byte, destHost string, destPort int) {
+	defer client.Close()
+
+	addr := fmt.Sprintf("%s:%d", profile.VlessCdnIp, profile.VlessCdnPort)
+
+	pub, err := base64.RawURLEncoding.DecodeString(profile.VlessRealityPub)
+	if err != nil {
+		pub, err = base64.StdEncoding.DecodeString(profile.VlessRealityPub)
+		if err != nil || len(pub) != 32 {
+			fmt.Fprintf(os.Stderr, "  REALITY: invalid public key %q\n", profile.VlessRealityPub)
+			return
+		}
+	}
+	sid, err := hex.DecodeString(profile.VlessRealitySid)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  REALITY: invalid shortId %q\n", profile.VlessRealitySid)
+		return
+	}
+
+	sni := profile.Domain
+	if profile.FakeSni != "" {
+		sni = profile.FakeSni
+	}
+
+	cfg := &realityConfig{
+		ServerName:  sni,
+		PublicKey:   pub,
+		ShortID:     sid,
+		Fingerprint: profile.VlessRealityFp,
+	}
+
+	conn, err := realityDial(context.Background(), addr, cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  REALITY connect failed: %v\n", err)
+		return
+	}
+	defer conn.Close()
+
+	// Send VLESS request header (raw TCP transport)
+	if _, err := conn.Write(buildVlessHeader(uuid, destHost, destPort)); err != nil {
+		return
+	}
+
+	// Read VLESS response: version(1) + addons_len(1) + [addons]
+	br := bufio.NewReader(conn)
+	hdr := make([]byte, 2)
+	if _, err := io.ReadFull(br, hdr); err != nil {
+		return
+	}
+	addonsLen := int(hdr[1])
+	if addonsLen > 0 {
+		if _, err := io.CopyN(io.Discard, br, int64(addonsLen)); err != nil {
+			return
+		}
+	}
+
+	// Bidirectional raw relay
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		io.Copy(conn, client)
+	}()
+	go func() {
+		defer wg.Done()
+		io.Copy(client, br)
+	}()
+	wg.Wait()
 }
 
 // buildVlessHeader constructs the VLESS request header.
