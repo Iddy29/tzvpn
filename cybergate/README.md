@@ -366,3 +366,23 @@ Built on top of [dnstm](https://github.com/net2share/dnstm) and [vaydns](https:/
 ## License
 
 AGPL-3.0
+
+## Hysteria2
+
+Hysteria2 (QUIC proxy, with optional Salamander obfuscation) is installed with a
+dedicated script - it is not part of the main menu yet:
+
+``bash
+sudo bash hysteria2-setup.sh
+``
+
+Interactive prompts let you set the port, auto-generates a strong auth password,
+optionally enables Salamander obfuscation, creates a self-signed certificate,
+installs the systemd service, opens the firewall, and prints a ready-to-import
+hysteria2:// link (plus QR if qrencode is installed) for the TZVPN app.
+
+Non-interactive example:
+
+``bash
+sudo bash hysteria2-setup.sh --port 443 --obfs on
+``

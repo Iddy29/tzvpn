@@ -74,7 +74,7 @@ TZVPN supports multiple tunnel types with optional SSH chaining:
 
 ## Server Setup
 
-To use this client, you must run a compatible server. The official, supported way is **CyberGate** — a one-command Linux installer that sets up every protocol TZVPN supports (DNSTT, NoizDNS, VayDNS, Slipstream, SSH, NaiveProxy, VLESS).
+To use this client, you must run a compatible server. The official, supported way is **CyberGate** — a server installer that sets up every protocol TZVPN supports (DNSTT, NoizDNS, VayDNS, Slipstream, SSH, NaiveProxy, VLESS) plus Hysteria2 via its dedicated script.
 
 [**CyberGate**](https://github.com/Iddy29/tzvpn/tree/main/cybergate) — one-command server installer with interactive management menu
 
