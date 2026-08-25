@@ -35,8 +35,8 @@ TZVPN supports multiple tunnel types with optional SSH chaining:
 | **NoizDNS + SSH** | KCP + Noise + SSH | NoizDNS with SSH chaining |
 | **VayDNS** | KCP + Noise | Optimized DNS tunneling with configurable wire format |
 | **VayDNS + SSH** | KCP + Noise + SSH | VayDNS with SSH chaining |
-| **Slipstream** | QUIC | High-performance QUIC tunneling |
-| **Slipstream + SSH** | QUIC + SSH | Slipstream with SSH chaining |
+| **tz-kitonga** | QUIC | High-performance QUIC tunneling |
+| **tz-kitonga + SSH** | QUIC + SSH | tz-kitonga with SSH chaining |
 | **SSH** | SSH | Standalone SSH tunnel (no DNS tunneling) |
 | **NaiveProxy** | HTTPS (Chromium) | HTTPS tunnel with authentic Chrome TLS fingerprinting |
 | **NaiveProxy + SSH** | HTTPS + SSH | NaiveProxy with SSH chaining for extra encryption |
@@ -51,10 +51,10 @@ TZVPN supports multiple tunnel types with optional SSH chaining:
 ## Features
 
 - **Modern UI**: Built entirely with Jetpack Compose and Material 3 design
-- **Multiple Tunnel Types**: DNSTT, NoizDNS, VayDNS, Slipstream, SSH, NaiveProxy, DOH, and Tor with optional SSH chaining
+- **Multiple Tunnel Types**: DNSTT, NoizDNS, VayDNS, tz-kitonga, SSH, NaiveProxy, DOH, and Tor with optional SSH chaining
 - **NoizDNS**: DPI-resistant DNS tunneling with optional stealth mode
 - **VayDNS**: Optimized DNS tunneling with configurable wire format, record types, QNAME lengths, and rate limiting
-- **SSH Tunneling**: Chain SSH through DNSTT, NoizDNS, VayDNS, Slipstream, or NaiveProxy, or use standalone SSH
+- **SSH Tunneling**: Chain SSH through DNSTT, NoizDNS, VayDNS, tz-kitonga, or NaiveProxy, or use standalone SSH
 - **SSH over TLS**: Wrap SSH in TLS with custom SNI for domain fronting and DPI bypass
 - **SSH over WebSocket**: Tunnel SSH through WebSocket (ws/wss) for CDN-based proxying (Cloudflare, etc.)
 - **SSH over HTTP CONNECT**: Route SSH through HTTP CONNECT proxies with custom Host headers
@@ -74,7 +74,7 @@ TZVPN supports multiple tunnel types with optional SSH chaining:
 
 ## Server Setup
 
-To use this client, you must run a compatible server. The official, supported way is **CyberGate** — a server installer that sets up every protocol TZVPN supports (DNSTT, NoizDNS, VayDNS, Slipstream, SSH, NaiveProxy, VLESS) plus Hysteria2 via its dedicated script.
+To use this client, you must run a compatible server. The official, supported way is **CyberGate** — a server installer that sets up every protocol TZVPN supports (DNSTT, NoizDNS, VayDNS, tz-kitonga, SSH, NaiveProxy, VLESS) plus Hysteria2 via its dedicated script.
 
 [**CyberGate**](https://github.com/Iddy29/tzvpn/tree/main/cybergate) — one-command server installer with interactive management menu
 

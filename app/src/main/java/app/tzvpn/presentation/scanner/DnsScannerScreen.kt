@@ -1156,7 +1156,7 @@ private fun ConfigurationSection(
                             modifier = Modifier.size(20.dp)
                         )
                     },
-                    supportingText = { Text("Parallel tunnel tests (1-10, Slipstream max 1)") },
+                    supportingText = { Text("Parallel tunnel tests (1-10, tz-kitonga max 1)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)

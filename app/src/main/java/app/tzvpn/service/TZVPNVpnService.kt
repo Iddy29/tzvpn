@@ -111,7 +111,7 @@ class TZVPNVpnService : VpnService() {
         private const val BOOT_RETRY_MAX_DELAY_MS = 30_000L
         private const val BOOT_RETRY_MAX_ATTEMPTS = 10
 
-        // SSH over tunnel (DNSTT/NoizDNS/Slipstream) retry count.
+        // SSH over tunnel (DNSTT/NoizDNS/tz-kitonga) retry count.
         // DNS tunnels can drop the first connection due to DPI or packet loss.
         private const val SSH_OVER_TUNNEL_RETRIES = 3
     }
@@ -331,7 +331,7 @@ class TZVPNVpnService : VpnService() {
                 try { VaydnsBridge.stopClient() } catch (_: Exception) {}
                 try { SlipstreamBridge.stopClient() } catch (_: Exception) {}
                 // Give native threads extra time to fully release ports after stop.
-                // Both Go (DNSTT/VayDNS) and Rust (Slipstream) may take a moment to close listeners.
+                // Both Go (DNSTT/VayDNS) and Rust (tz-kitonga) may take a moment to close listeners.
                 delay(300)
             }
 
@@ -530,7 +530,7 @@ class TZVPNVpnService : VpnService() {
                 }
 
                 // The startup order differs between tunnel types:
-                // - Slipstream: Start proxy first (Rust uses protect_socket JNI callback)
+                // - tz-kitonga: Start proxy first (Rust uses protect_socket JNI callback)
                 // - DNSTT: Establish VPN first (uses addDisallowedApplication for socket protection)
                 when (currentTunnelType) {
                     TunnelType.SLIPSTREAM -> connectSlipstream(profile, dnsServer, remoteDns, remoteDnsFallback, globalResolverOverride)
@@ -877,10 +877,10 @@ class TZVPNVpnService : VpnService() {
                 Log.i(TAG, "Chain layer $i: Tor bootstrapped")
             }
 
-            // For Slipstream, wait for QUIC handshake
+            // For tz-kitonga, wait for QUIC handshake
             if (profile.tunnelType == TunnelType.SLIPSTREAM) {
                 if (!waitForQuicReady(maxAttempts = 50, delayMs = 200)) {
-                    connectionManager.onVpnError("Slipstream QUIC handshake failed")
+                    connectionManager.onVpnError("tz-kitonga QUIC handshake failed")
                     for (layer in startedLayers.reversed()) stopLayer(layer)
                     activeChainLayers = emptyList()
                     currentChainId = -1
@@ -891,7 +891,7 @@ class TZVPNVpnService : VpnService() {
                     return
                 }
 
-                // VPN interface after Slipstream is ready (if not already established)
+                // VPN interface after tz-kitonga is ready (if not already established)
                 if (!isProxyOnly && vpnInterface == null) {
                     vpnInterface = establishVpnInterface(dnsServer)
                     if (vpnInterface == null) {
@@ -1271,13 +1271,13 @@ class TZVPNVpnService : VpnService() {
     }
 
     /**
-     * Connect using Slipstream tunnel type.
+     * Connect using tz-kitonga tunnel type.
      * Order: Set VpnService ref -> Start proxy -> Wait for ready -> Wait for QUIC
      *        -> VPN interface (with addDisallowedApplication) -> Start bridge -> tun2socks on bridge port
      *
-     * Slipstream's SOCKS5 proxy only supports CONNECT (no auth, no FWD_UDP).
-     * SlipstreamSocksBridge sits between hev-socks5-tunnel and Slipstream:
-     * - CONNECT: chains to Slipstream's SOCKS5 proxy
+     * tz-kitonga's SOCKS5 proxy only supports CONNECT (no auth, no FWD_UDP).
+     * SlipstreamSocksBridge sits between hev-socks5-tunnel and tz-kitonga:
+     * - CONNECT: chains to tz-kitonga's SOCKS5 proxy
      * - FWD_UDP: forwards DNS/UDP directly via DatagramSocket
      *
      * addDisallowedApplication ensures the bridge's DatagramSockets bypass VPN.
@@ -1291,7 +1291,7 @@ class TZVPNVpnService : VpnService() {
         SlipstreamBridge.proxyOnlyMode = isProxyOnly
         SlipstreamBridge.setVpnService(this@TZVPNVpnService)
 
-        // Step 2: Start Slipstream proxy on internal port (127.0.0.1 only)
+        // Step 2: Start tz-kitonga proxy on internal port (127.0.0.1 only)
         val proxyResult = vpnRepository.startSlipstreamProxy(profile, portOverride = slipstreamPort, hostOverride = "127.0.0.1", resolverOverride = globalResolverOverride)
         if (proxyResult.isFailure) {
             connectionManager.onVpnError(proxyResult.exceptionOrNull()?.message ?: "Failed to start proxy")
@@ -1304,7 +1304,7 @@ class TZVPNVpnService : VpnService() {
         // Read actual port — may differ from requested if preferred port was stuck
         val actualSlipstreamPort = SlipstreamBridge.getClientPort()
         if (actualSlipstreamPort != slipstreamPort) {
-            Log.i(TAG, "Slipstream bound to alternative port $actualSlipstreamPort (preferred $slipstreamPort was stuck)")
+            Log.i(TAG, "tz-kitonga bound to alternative port $actualSlipstreamPort (preferred $slipstreamPort was stuck)")
         }
 
         // Step 2.5: Verify proxy is listening
@@ -1356,7 +1356,7 @@ class TZVPNVpnService : VpnService() {
         // Proxy-only mode: skip VPN interface and tun2socks
         if (isProxyOnly) {
             vpnRepository.setProxyConnected(profile)
-            Log.i(TAG, "Proxy-only mode: Slipstream SOCKS5 bridge ready on $proxyHost:$proxyPort")
+            Log.i(TAG, "Proxy-only mode: tz-kitonga SOCKS5 bridge ready on $proxyHost:$proxyPort")
             finishConnection()
             return
         }
@@ -1389,24 +1389,24 @@ class TZVPNVpnService : VpnService() {
     }
 
     /**
-     * Connect using Slipstream+SSH tunnel type.
-     * Order: Set VpnService ref -> Start Slipstream -> Wait for ready -> Wait for QUIC (hard req)
-     *        -> Start SSH directly through Slipstream tunnel (loopback, no VPN needed)
+     * Connect using tz-kitonga+SSH tunnel type.
+     * Order: Set VpnService ref -> Start tz-kitonga -> Wait for ready -> Wait for QUIC (hard req)
+     *        -> Start SSH directly through tz-kitonga tunnel (loopback, no VPN needed)
      *        -> Wait for SSH ready -> VPN interface -> tun2socks on SSH port
      *
-     * Slipstream in SSH mode is a raw TCP tunnel to the SSH server (like DNSTT).
+     * tz-kitonga in SSH mode is a raw TCP tunnel to the SSH server (like DNSTT).
      * The server's --target-address points to SSH port 22, so all tunnel traffic
-     * goes directly to SSH. JSch connects directly to Slipstream's local port —
+     * goes directly to SSH. JSch connects directly to tz-kitonga's local port —
      * no ProxySOCKS5 or Dante needed.
      *
      * VPN interface is established AFTER SSH connects. The SSH connection goes
-     * through loopback (JSch -> 127.0.0.1:proxyPort+1 -> Slipstream), so VPN routing
+     * through loopback (JSch -> 127.0.0.1:proxyPort+1 -> tz-kitonga), so VPN routing
      * isn't needed. Establishing VPN too early can disrupt QUIC establishment.
      *
      * Traffic flow:
      * App -> TUN -> hev-socks5-tunnel -> SSH SOCKS5 (proxyPort)
-     *   -> SSH direct-tcpip -> Slipstream (proxyPort+1, 127.0.0.1, raw TCP tunnel)
-     *   -> DNS tunnel (UDP 53) -> Slipstream Server -> SSH Server -> Internet
+     *   -> SSH direct-tcpip -> tz-kitonga (proxyPort+1, 127.0.0.1, raw TCP tunnel)
+     *   -> DNS tunnel (UDP 53) -> tz-kitonga Server -> SSH Server -> Internet
      */
     /**
      * Build a DomainRouter from DataStore preferences.
@@ -1448,7 +1448,7 @@ class TZVPNVpnService : VpnService() {
      *
      * If the user hasn't manually set Max Channels, uses a tunnel-type-aware default:
      * - SSH-only: 32 (direct TCP, good bandwidth)
-     * - Slipstream+SSH: 24 (moderate throughput)
+     * - tz-kitonga+SSH: 24 (moderate throughput)
      * - DNSTT+SSH: 12 (limited DNS throughput, too many channels choke the tunnel)
      */
     private suspend fun configureSshBridge() {
@@ -1501,10 +1501,10 @@ class TZVPNVpnService : VpnService() {
         SlipstreamBridge.proxyOnlyMode = isProxyOnly
         SlipstreamBridge.setVpnService(this@TZVPNVpnService)
 
-        // Step 2: Start Slipstream tunnel on internal port (127.0.0.1 only)
+        // Step 2: Start tz-kitonga tunnel on internal port (127.0.0.1 only)
         val proxyResult = vpnRepository.startSlipstreamProxy(profile, portOverride = slipstreamPort, hostOverride = "127.0.0.1", resolverOverride = globalResolverOverride)
         if (proxyResult.isFailure) {
-            connectionManager.onVpnError(proxyResult.exceptionOrNull()?.message ?: "Failed to start Slipstream proxy")
+            connectionManager.onVpnError(proxyResult.exceptionOrNull()?.message ?: "Failed to start tz-kitonga proxy")
             SlipstreamBridge.setVpnService(null)
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
@@ -1514,22 +1514,22 @@ class TZVPNVpnService : VpnService() {
         // Read actual port — may differ from requested if preferred port was stuck
         val actualSlipstreamPort = SlipstreamBridge.getClientPort()
         if (actualSlipstreamPort != slipstreamPort) {
-            Log.i(TAG, "Slipstream bound to alternative port $actualSlipstreamPort (preferred $slipstreamPort was stuck)")
+            Log.i(TAG, "tz-kitonga bound to alternative port $actualSlipstreamPort (preferred $slipstreamPort was stuck)")
         }
 
-        // Step 2.5: Verify Slipstream is listening
+        // Step 2.5: Verify tz-kitonga is listening
         if (!waitForProxyReady(actualSlipstreamPort, maxAttempts = 20, delayMs = 100)) {
             handleProxyStartupFailure(actualSlipstreamPort)
             return
         }
 
-        // Step 2.6: Wait for QUIC handshake — REQUIRED for Slipstream+SSH.
+        // Step 2.6: Wait for QUIC handshake — REQUIRED for tz-kitonga+SSH.
         // SSH needs a working QUIC tunnel before JSch can connect through it.
-        // Wait longer than plain Slipstream (30s vs 5s) since this is a hard requirement.
+        // Wait longer than plain tz-kitonga (30s vs 5s) since this is a hard requirement.
         val quicReady = waitForQuicReady(maxAttempts = 150, delayMs = 200)
         if (!quicReady) {
-            Log.e(TAG, "QUIC connection not ready — cannot establish SSH through Slipstream")
-            connectionManager.onVpnError("Slipstream tunnel failed to connect (QUIC timeout)")
+            Log.e(TAG, "QUIC connection not ready — cannot establish SSH through tz-kitonga")
+            connectionManager.onVpnError("tz-kitonga tunnel failed to connect (QUIC timeout)")
             SlipstreamBridge.stopClient()
             SlipstreamBridge.setVpnService(null)
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -1541,15 +1541,15 @@ class TZVPNVpnService : VpnService() {
         vpnRepository.setCurrentTunnelType(TunnelType.SLIPSTREAM_SSH)
         currentTunnelType = TunnelType.SLIPSTREAM_SSH
 
-        // Step 4: Start SSH tunnel directly through Slipstream (with retry)
-        // Slipstream in SSH mode is a raw TCP tunnel (like DNSTT) — the server's
+        // Step 4: Start SSH tunnel directly through tz-kitonga (with retry)
+        // tz-kitonga in SSH mode is a raw TCP tunnel (like DNSTT) — the server's
         // --target-address forwards all traffic to SSH. JSch connects directly to
-        // Slipstream's local port, no SOCKS5 proxy wrapper needed.
+        // tz-kitonga's local port, no SOCKS5 proxy wrapper needed.
         configureSshBridge()
         var sshResult: Result<Unit> = Result.failure(RuntimeException("SSH not attempted"))
         for (attempt in 1..SSH_OVER_TUNNEL_RETRIES) {
             sshResult = withContext(Dispatchers.IO) {
-                Log.i(TAG, "Starting SSH tunnel through Slipstream (${profile.sshHost}:${profile.sshPort} via 127.0.0.1:$actualSlipstreamPort) attempt $attempt/$SSH_OVER_TUNNEL_RETRIES")
+                Log.i(TAG, "Starting SSH tunnel through tz-kitonga (${profile.sshHost}:${profile.sshPort} via 127.0.0.1:$actualSlipstreamPort) attempt $attempt/$SSH_OVER_TUNNEL_RETRIES")
                 SshTunnelBridge.startOverProxy(
                     sshHost = profile.sshHost,
                     sshPort = profile.sshPort,
@@ -1569,12 +1569,12 @@ class TZVPNVpnService : VpnService() {
             }
             if (sshResult.isSuccess) break
             if (attempt < SSH_OVER_TUNNEL_RETRIES) {
-                Log.w(TAG, "SSH over Slipstream attempt $attempt failed: ${sshResult.exceptionOrNull()?.message}, retrying...")
+                Log.w(TAG, "SSH over tz-kitonga attempt $attempt failed: ${sshResult.exceptionOrNull()?.message}, retrying...")
                 delay(1000L * attempt)
             }
         }
         if (sshResult.isFailure) {
-            connectionManager.onVpnError(sshResult.exceptionOrNull()?.message ?: "Failed to start SSH tunnel over Slipstream")
+            connectionManager.onVpnError(sshResult.exceptionOrNull()?.message ?: "Failed to start SSH tunnel over tz-kitonga")
             SlipstreamBridge.stopClient()
             SlipstreamBridge.setVpnService(null)
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -1585,7 +1585,7 @@ class TZVPNVpnService : VpnService() {
         // Step 4.5: Wait for SSH SOCKS5 proxy to be ready
         if (!waitForProxyReady(proxyPort, maxAttempts = 30, delayMs = 100)) {
             Log.e(TAG, "SSH SOCKS5 proxy failed to become ready on port $proxyPort")
-            connectionManager.onVpnError("SSH tunnel failed to start over Slipstream")
+            connectionManager.onVpnError("SSH tunnel failed to start over tz-kitonga")
             SshTunnelBridge.stop()
             SlipstreamBridge.stopClient()
             SlipstreamBridge.setVpnService(null)
@@ -1597,13 +1597,13 @@ class TZVPNVpnService : VpnService() {
         // Proxy-only mode: skip VPN interface and tun2socks
         if (isProxyOnly) {
             vpnRepository.setProxyConnected(profile)
-            Log.i(TAG, "Proxy-only mode: Slipstream+SSH SOCKS5 proxy ready on $proxyHost:$proxyPort")
+            Log.i(TAG, "Proxy-only mode: tz-kitonga+SSH SOCKS5 proxy ready on $proxyHost:$proxyPort")
             finishConnection()
             return
         }
 
         // Step 5: Establish VPN interface (with addDisallowedApplication — needed for geo-bypass
-        // direct sockets; Slipstream QUIC sockets are also protected via JNI)
+        // direct sockets; tz-kitonga QUIC sockets are also protected via JNI)
         // Done after SSH is connected to avoid disrupting QUIC during startup
         vpnInterface = establishVpnInterface(dnsServer)
         if (vpnInterface == null) {
@@ -1631,7 +1631,7 @@ class TZVPNVpnService : VpnService() {
         }
 
         delay(500)
-        Log.d(TAG, "Slipstream+SSH tunnel started")
+        Log.d(TAG, "tz-kitonga+SSH tunnel started")
         finishConnection()
     }
 
@@ -3685,13 +3685,13 @@ class TZVPNVpnService : VpnService() {
                     TunnelType.SLIPSTREAM -> try {
                         SlipstreamBridge.isNativeRunning()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error checking Slipstream native state: ${e.message}")
+                        Log.e(TAG, "Error checking tz-kitonga native state: ${e.message}")
                         true // Assume it's running if we can't check
                     }
                     TunnelType.SLIPSTREAM_SSH -> try {
                         SlipstreamBridge.isNativeRunning()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error checking Slipstream native state: ${e.message}")
+                        Log.e(TAG, "Error checking tz-kitonga native state: ${e.message}")
                         true
                     }
                     TunnelType.HYSTERIA2 -> try {
@@ -3860,7 +3860,7 @@ class TZVPNVpnService : VpnService() {
                     break
                 }
 
-                // For Slipstream types: check if QUIC connection is alive.
+                // For tz-kitonga types: check if QUIC connection is alive.
                 if (currentTunnelType == TunnelType.SLIPSTREAM || currentTunnelType == TunnelType.SLIPSTREAM_SSH) {
                     if (SlipstreamBridge.isQuicReady()) {
                         if (quicDownChecks > 0) {
@@ -4489,21 +4489,21 @@ class TZVPNVpnService : VpnService() {
                         return@launch
                     }
                 } else if (currentTunnelType == TunnelType.SLIPSTREAM_SSH) {
-                    // Slipstream+SSH: restart Slipstream on internal port, wait QUIC, then SSH on proxyPort
+                    // tz-kitonga+SSH: restart tz-kitonga on internal port, wait QUIC, then SSH on proxyPort
                     val slipstreamPort = proxyPort + 1
 
                     val slipResult = vpnRepository.startSlipstreamProxy(profile, portOverride = slipstreamPort, hostOverride = "127.0.0.1")
                     if (slipResult.isFailure) {
-                        Log.e(TAG, "Failed to restart Slipstream after network change", slipResult.exceptionOrNull())
-                        handleTunnelFailure("failed to reconnect Slipstream+SSH after network change")
+                        Log.e(TAG, "Failed to restart tz-kitonga after network change", slipResult.exceptionOrNull())
+                        handleTunnelFailure("failed to reconnect tz-kitonga+SSH after network change")
                         return@launch
                     }
 
                     val actualSlipstreamPort = SlipstreamBridge.getClientPort()
 
                     if (!waitForProxyReady(actualSlipstreamPort, maxAttempts = 20, delayMs = 50)) {
-                        Log.e(TAG, "Slipstream proxy failed to restart")
-                        handleTunnelFailure("failed to reconnect Slipstream+SSH after network change")
+                        Log.e(TAG, "tz-kitonga proxy failed to restart")
+                        handleTunnelFailure("failed to reconnect tz-kitonga+SSH after network change")
                         return@launch
                     }
 
@@ -4534,32 +4534,32 @@ class TZVPNVpnService : VpnService() {
                         )
                     }
                     if (sshResult.isFailure) {
-                        Log.e(TAG, "Failed to restart SSH over Slipstream after network change", sshResult.exceptionOrNull())
-                        handleTunnelFailure("failed to reconnect Slipstream+SSH after network change")
+                        Log.e(TAG, "Failed to restart SSH over tz-kitonga after network change", sshResult.exceptionOrNull())
+                        handleTunnelFailure("failed to reconnect tz-kitonga+SSH after network change")
                         return@launch
                     }
 
                     if (!waitForProxyReady(proxyPort, maxAttempts = 30, delayMs = 50)) {
                         Log.e(TAG, "SSH SOCKS5 proxy failed to restart on port $proxyPort")
-                        handleTunnelFailure("failed to reconnect Slipstream+SSH after network change")
+                        handleTunnelFailure("failed to reconnect tz-kitonga+SSH after network change")
                         return@launch
                     }
                 } else if (currentTunnelType == TunnelType.SLIPSTREAM) {
-                    // Slipstream: restart proxy on internal port + bridge on proxyPort
+                    // tz-kitonga: restart proxy on internal port + bridge on proxyPort
                     val slipstreamPort = proxyPort + 1
 
                     val slipResult = vpnRepository.startSlipstreamProxy(profile, portOverride = slipstreamPort, hostOverride = "127.0.0.1")
                     if (slipResult.isFailure) {
-                        Log.e(TAG, "Failed to restart Slipstream after network change", slipResult.exceptionOrNull())
-                        handleTunnelFailure("failed to reconnect Slipstream after network change")
+                        Log.e(TAG, "Failed to restart tz-kitonga after network change", slipResult.exceptionOrNull())
+                        handleTunnelFailure("failed to reconnect tz-kitonga after network change")
                         return@launch
                     }
 
                     val actualSlipstreamPort = SlipstreamBridge.getClientPort()
 
                     if (!waitForProxyReady(actualSlipstreamPort, maxAttempts = 20, delayMs = 50)) {
-                        Log.e(TAG, "Slipstream proxy failed to restart")
-                        handleTunnelFailure("failed to reconnect Slipstream after network change")
+                        Log.e(TAG, "tz-kitonga proxy failed to restart")
+                        handleTunnelFailure("failed to reconnect tz-kitonga after network change")
                         return@launch
                     }
 
@@ -4854,10 +4854,10 @@ class TZVPNVpnService : VpnService() {
 
                 // Wait for tunnel to be re-established
                 if (currentTunnelType == TunnelType.SLIPSTREAM) {
-                    // QUIC wait already done during Slipstream reconnection above
+                    // QUIC wait already done during tz-kitonga reconnection above
                     delay(500)
                 } else if (currentTunnelType == TunnelType.SLIPSTREAM_SSH) {
-                    // QUIC wait already done during Slipstream+SSH reconnection above
+                    // QUIC wait already done during tz-kitonga+SSH reconnection above
                     delay(500)
                 } else if (currentTunnelType == TunnelType.SNOWFLAKE) {
                     // Wait for Tor to re-bootstrap after network change
@@ -4949,12 +4949,12 @@ class TZVPNVpnService : VpnService() {
 
         when (currentTunnelType) {
             TunnelType.SLIPSTREAM -> {
-                Log.d(TAG, "Stopping Slipstream proxy and bridge")
+                Log.d(TAG, "Stopping tz-kitonga proxy and bridge")
                 SlipstreamSocksBridge.stop()
                 SlipstreamBridge.stopClient()
             }
             TunnelType.SLIPSTREAM_SSH -> {
-                Log.d(TAG, "Stopping Slipstream+SSH: SSH first, then Slipstream")
+                Log.d(TAG, "Stopping tz-kitonga+SSH: SSH first, then tz-kitonga")
                 SshTunnelBridge.stop()
                 SlipstreamBridge.stopClient()
             }
@@ -5410,7 +5410,7 @@ class TZVPNVpnService : VpnService() {
 
         // Cancel any in-progress reconnection immediately — before the coroutine.
         // This prevents a race where the reconnect coroutine is mid-flight in native
-        // code (e.g., starting Slipstream on port 1081) while disconnect also tries
+        // code (e.g., starting tz-kitonga on port 1081) while disconnect also tries
         // to stop/start, leading to "port already in use" on the next connect.
         reconnectDebounceJob?.cancel()
         reconnectDebounceJob = null

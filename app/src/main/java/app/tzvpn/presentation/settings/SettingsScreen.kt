@@ -551,7 +551,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Hub,
                     title = "DNS workers",
                     description = buildString {
-                        append("${uiState.dnsWorkerMode.displayName} (DNSTT/Slipstream, SSH always uses 5)")
+                        append("${uiState.dnsWorkerMode.displayName} (DNSTT/tz-kitonga, SSH always uses 5)")
                         if (uiState.dnsWorkerMode.poolSize >= 3) append(" — may increase data usage")
                     },
                     onClick = { showDnsWorkerDialog = true }

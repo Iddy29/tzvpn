@@ -775,7 +775,7 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
-                // E2E tests run sequentially: Slipstream still uses the singleton
+                // E2E tests run sequentially: tz-kitonga still uses the singleton
                 // native lib; DNSTT/NoizDNS/Vaydns now use the isolated variant
                 // and *could* run in parallel, but a mixed list is simplest to
                 // schedule one-at-a-time.

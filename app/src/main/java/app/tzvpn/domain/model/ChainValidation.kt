@@ -50,7 +50,7 @@ object ChainValidation {
 
     /** What a tunnel type provides to the next layer in the chain. */
     fun outputType(type: TunnelType): LayerOutput? = when (type) {
-        // Standalone DNSTT/NoizDNS/Slipstream tunnel to a remote Dante SOCKS5 proxy,
+        // Standalone DNSTT/NoizDNS/tz-kitonga tunnel to a remote Dante SOCKS5 proxy,
         // so the next layer must perform a SOCKS5 handshake (with auth) to connect.
         TunnelType.DNSTT, TunnelType.NOIZDNS, TunnelType.VAYDNS -> LayerOutput.SOCKS5
         TunnelType.SLIPSTREAM -> LayerOutput.SOCKS5
@@ -71,7 +71,7 @@ object ChainValidation {
         TunnelType.SOCKS5 -> true  // SOCKS5 outbound traffic is routed through VPN/previous layer
         TunnelType.DNSTT, TunnelType.NOIZDNS, TunnelType.VAYDNS -> input == LayerOutput.SOCKS5  // needs SOCKS5 for resolver bypass
         TunnelType.NAIVE -> true  // NaiveProxy outbound is routed through VPN/previous layer
-        TunnelType.SLIPSTREAM -> false  // Slipstream connects to its own server directly
+        TunnelType.SLIPSTREAM -> false  // tz-kitonga connects to its own server directly
         // DoH can route its upstream HTTPS through a previous SOCKS5 layer
         // (e.g. Snowflake/Tor), giving DoH-over-Tor.
         TunnelType.DOH -> input == LayerOutput.SOCKS5
@@ -102,7 +102,7 @@ object ChainValidation {
     /**
      * Whether the tunnel type needs the VPN interface established before starting.
      * Types that use addDisallowedApplication need VPN first.
-     * Slipstream uses JNI protect_socket so it can start before VPN.
+     * tz-kitonga uses JNI protect_socket so it can start before VPN.
      */
     fun needsVpnFirst(type: TunnelType): Boolean = when (type) {
         TunnelType.SLIPSTREAM -> false

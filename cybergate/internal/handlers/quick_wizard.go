@@ -428,7 +428,7 @@ func handleQuickWizard(ctx *actions.Context) error {
 				if err := certs.GenerateSelfSigned(certPath, keyPath, tunnelDomain); err != nil {
 					return actions.NewError(actions.QuickWizard, "certificate generation failed", err)
 				}
-				tunnel.Slipstream = &config.SlipstreamConfig{
+				tunnel.tz-kitonga = &config.SlipstreamConfig{
 					Cert: certPath,
 					Key:  keyPath,
 				}

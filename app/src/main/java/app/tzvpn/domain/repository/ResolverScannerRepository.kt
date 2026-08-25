@@ -177,7 +177,7 @@ interface ResolverScannerRepository {
     /**
      * Test a single resolver E2E using an isolated (ephemeral) tunnel instance.
      * For DNSTT/NoizDNS: creates its own Go client on a unique port (safe for parallel use).
-     * For Slipstream: falls back to the singleton bridge (must be serialized externally).
+     * For tz-kitonga: falls back to the singleton bridge (must be serialized externally).
      */
     suspend fun testResolverE2eIsolated(
         resolverHost: String,
@@ -191,7 +191,7 @@ interface ResolverScannerRepository {
 
     /**
      * Maximum parallel E2E concurrency supported for the given tunnel type.
-     * Slipstream uses a native singleton so only 1 is supported.
+     * tz-kitonga uses a native singleton so only 1 is supported.
      * DNSTT/NoizDNS create ephemeral Go clients, supporting higher concurrency.
      */
     fun maxE2eConcurrency(profile: ServerProfile): Int

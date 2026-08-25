@@ -370,7 +370,7 @@ class ConfigImporter @Inject constructor() {
             return ProfileParseResult.Error("Line $lineNum: Invalid port $port")
         }
 
-        // V1 profiles are always Slipstream
+        // V1 profiles are always tz-kitonga
         val profile = ServerProfile(
             id = 0,
             name = name,

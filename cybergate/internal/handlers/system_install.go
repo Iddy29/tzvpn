@@ -456,7 +456,7 @@ func handleSystemInstall(ctx *actions.Context) error {
 				if err := certs.GenerateSelfSigned(certPath, keyPath, tunnelDomain); err != nil {
 					return actions.NewError(actions.SystemInstall, "cert generation failed", err)
 				}
-				tunnel.Slipstream = &config.SlipstreamConfig{Cert: certPath, Key: keyPath}
+				tunnel.tz-kitonga = &config.SlipstreamConfig{Cert: certPath, Key: keyPath}
 
 			case config.TransportNaive:
 				if bIdx == 0 {

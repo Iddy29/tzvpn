@@ -9,7 +9,7 @@ import (
 
 // buildSlipstreamExecStart builds the ExecStart for slipstream-server.
 func buildSlipstreamExecStart(tunnel *config.TunnelConfig, cfg *config.Config) (string, error) {
-	if tunnel.Slipstream == nil {
+	if tunnel.tz-kitonga == nil {
 		return "", fmt.Errorf("slipstream config is nil")
 	}
 
@@ -23,8 +23,8 @@ func buildSlipstreamExecStart(tunnel *config.TunnelConfig, cfg *config.Config) (
 	return fmt.Sprintf("%s --dns-listen-host 127.0.0.1 --dns-listen-port %d --cert %s --key %s --domain %s --target-address %s",
 		binPath,
 		tunnel.Port,
-		tunnel.Slipstream.Cert,
-		tunnel.Slipstream.Key,
+		tunnel.tz-kitonga.Cert,
+		tunnel.tz-kitonga.Key,
 		tunnel.Domain,
 		backend.Address,
 	), nil

@@ -546,7 +546,7 @@ class SshTunnelInstance(val instanceId: String = "default") {
                     if (sshKeyPassphrase.isNotBlank()) sshKeyPassphrase.toByteArray(Charsets.UTF_8) else null
                 )
             }
-            // Connect directly to the tunnel's local port. The tunnel (DNSTT/Slipstream)
+            // Connect directly to the tunnel's local port. The tunnel (DNSTT/tz-kitonga)
             // forwards raw TCP to the SSH server. No SOCKS5 handshake is needed.
             val newSession = jsch.getSession(sshUsername, proxyHost, proxyPort)
             if (sshAuthType == SshAuthType.KEY) {
@@ -580,17 +580,17 @@ class SshTunnelInstance(val instanceId: String = "default") {
     }
 
     /**
-     * Start SSH tunnel through a SOCKS5 proxy (Slipstream/Dante).
-     * Unlike DNSTT (raw TCP tunnel), Slipstream exposes a real SOCKS5 proxy.
-     * JSch uses ProxySOCKS5 to send a SOCKS5 CONNECT through Slipstream to reach the SSH server.
+     * Start SSH tunnel through a SOCKS5 proxy (tz-kitonga/Dante).
+     * Unlike DNSTT (raw TCP tunnel), tz-kitonga exposes a real SOCKS5 proxy.
+     * JSch uses ProxySOCKS5 to send a SOCKS5 CONNECT through tz-kitonga to reach the SSH server.
      * DNS queries are routed through SSH direct-tcpip to the SSH server's local resolver.
      *
-     * @param sshHost SSH server host (as seen from the Slipstream/Dante server)
+     * @param sshHost SSH server host (as seen from the tz-kitonga/Dante server)
      * @param sshPort SSH server port
      * @param sshUsername SSH username
      * @param sshPassword SSH password
-     * @param proxyHost Slipstream local SOCKS5 proxy host (e.g., 127.0.0.1)
-     * @param proxyPort Slipstream local SOCKS5 proxy port (e.g., 1080)
+     * @param proxyHost tz-kitonga local SOCKS5 proxy host (e.g., 127.0.0.1)
+     * @param proxyPort tz-kitonga local SOCKS5 proxy port (e.g., 1080)
      * @param socksUsername SOCKS5 proxy username (for Dante auth, optional)
      * @param socksPassword SOCKS5 proxy password (for Dante auth, optional)
      * @param listenPort Local port for the SSH SOCKS5 proxy

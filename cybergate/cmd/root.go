@@ -17,7 +17,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "cybergate",
 	Short: "Unified server tunnel manager",
-	Long:  "CyberGate manages DNS tunnels (DNSTT, NoizDNS, Slipstream, VayDNS) and HTTPS proxies (NaiveProxy) with systemd services.",
+	Long:  "CyberGate manages DNS tunnels (DNSTT, NoizDNS, tz-kitonga, VayDNS) and HTTPS proxies (NaiveProxy) with systemd services.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if v, _ := cmd.Flags().GetBool("version"); v {
 			cmd.Println(version.String())

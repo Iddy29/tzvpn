@@ -33,7 +33,7 @@ object HevSocks5Tunnel {
      * @param socksUsername SOCKS5 username (optional)
      * @param socksPassword SOCKS5 password (optional)
      * @param enableUdpTunneling If true, tunnel UDP over TCP SOCKS5 (needed for DNSTT).
-     *                           If false, UDP is not tunneled (Slipstream uses DnsForwarder instead).
+     *                           If false, UDP is not tunneled (tz-kitonga uses DnsForwarder instead).
      * @param mtu MTU size
      * @param ipv4Address IPv4 address for TUN interface
      * @return Result indicating success or failure

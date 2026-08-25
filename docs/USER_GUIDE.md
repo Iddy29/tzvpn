@@ -54,20 +54,20 @@ The full source code lives on GitHub under a **source-available** license — re
 | **DNSTT** | DNS (KCP + Noise) | Tunnels traffic inside DNS queries | Networks that only allow DNS |
 | **NoizDNS** | DNS (KCP + Noise) | DNSTT with DPI evasion (base36/hex, CDN prefix stripping) | Heavily inspected networks |
 | **VayDNS** | DNS (KCP + Curve25519) | Optimized DNS tunnel; tunable record types, QNAME length, rate limit | Advanced users on flaky DNS paths |
-| **Slipstream** | QUIC | High-performance QUIC tunnel | Fast, clean networks |
+| **tz-kitonga** | QUIC | High-performance QUIC tunnel | Fast, clean networks |
 | **SSH** | SSH | Standalone SSH tunnel | Simple, encrypted, leak-proof |
 | **NaiveProxy** | HTTPS (Caddy + Chromium TLS) | HTTPS with authentic Chrome TLS fingerprint | DPI bypass over HTTPS |
 | **VLESS** | WebSocket (over TLS or plain) | VLESS-over-WebSocket via CDN (e.g. Cloudflare) | CDN fronting, very common in Iran |
 | **DOH** | DNS over HTTPS | Encrypts DNS only — no traffic tunnel | Bypassing DNS-only blocks |
 | **Tor** | Tor + Snowflake/obfs4/Meek | Anonymity network | Strong anonymity |
-| **+ SSH variants** | (DNSTT/NoizDNS/VayDNS/Slipstream/NaiveProxy/VLESS) + SSH | Adds SSH on top — zero DNS leaks, extra encryption | Maximum security |
+| **+ SSH variants** | (DNSTT/NoizDNS/VayDNS/tz-kitonga/NaiveProxy/VLESS) + SSH | Adds SSH on top — zero DNS leaks, extra encryption | Maximum security |
 
 **How to choose:**
 
 - New user, no idea? → **DNSTT** (default).
 - DPI is aggressive? → **NoizDNS** or **NoizDNS + SSH**.
 - Need to fly under Cloudflare? → **VLESS** or **NaiveProxy**.
-- Want raw speed on a clean link? → **Slipstream**.
+- Want raw speed on a clean link? → **tz-kitonga**.
 - Need anonymity? → **Tor** (Full edition only).
 
 ---
@@ -79,7 +79,7 @@ TZVPN ships in two editions — the difference is the size of the APK and which 
 | Feature | Full | Lite |
 |---------|:----:|:----:|
 | DNSTT, NoizDNS, VayDNS | ✓ | ✓ |
-| Slipstream (QUIC) | ✓ | ✓ |
+| tz-kitonga (QUIC) | ✓ | ✓ |
 | SSH | ✓ | ✓ |
 | DoH | ✓ | ✓ |
 | VLESS | ✓ | ✓ |
@@ -226,7 +226,7 @@ These fields appear above the scan button. Most have sane defaults — only touc
 **E2E-only**
 - **Resolver Port** — port the resolver listens on (53 unless overridden).
 - **E2E Timeout** — per-resolver tunnel-test timeout. Default 15000 ms.
-- **E2E Concurrency** — parallel tunnel tests. 1–10. **Slipstream max 1** because QUIC tunnels can't share a port.
+- **E2E Concurrency** — parallel tunnel tests. 1–10. **tz-kitonga max 1** because QUIC tunnels can't share a port.
 - **Test URL** — what the tunnel will fetch to prove connectivity. Default `http://www.gstatic.com/generate_204` (returns 204 No Content — small, fast, doesn't depend on DNS resolution inside the tunnel).
 - **Full Verification** — when on, fetches the test URL through the live tunnel; when off, only confirms the tunnel handshake completes.
 
@@ -388,7 +388,7 @@ What each tunnel type asks for when you build a profile manually.
 - **Idle Timeout / Keep-Alive / UDP Timeout**
 - **ClientID Size** — must match server (default 2; 8 in DNSTT-compat mode)
 
-### Slipstream
+### tz-kitonga
 - Domain + Public Key
 - **Congestion Control** — BBR / DCUBIC
 - **Keep-Alive Interval**
@@ -459,7 +459,7 @@ If any step fails, SSH never goes green. So when SSH says "connected", an encryp
 **Practical takeaway:**
 
 - Treat SOCKS5 mode as a **transport adapter** for a proxy you already trust — not as a tunnel test. If the proxy is broken or geo-restricted, you'll see green with zero traffic flowing.
-- For a real anti-censorship tunnel, prefer **SSH** or one of the SSH-wrapped variants (NoizDNS+SSH, Slipstream+SSH, VLESS+SSH, NaiveProxy+SSH, …) — they fail loudly when something is wrong.
+- For a real anti-censorship tunnel, prefer **SSH** or one of the SSH-wrapped variants (NoizDNS+SSH, tz-kitonga+SSH, VLESS+SSH, NaiveProxy+SSH, …) — they fail loudly when something is wrong.
 - If you must run plain SOCKS5, layer **SSH on top** when the upstream supports it — the `+ SSH` family treats the upstream as a transport and runs a real SSH session through it, restoring liveness and authentication guarantees.
 
 ### DOH
@@ -480,7 +480,7 @@ If any step fails, SSH never goes green. So when SSH says "connected", an encryp
 | Connects, then drops in seconds | Lower **VPN MTU** (1280), set **DNS Workers = 1** or *per-query* |
 | Connected but no internet | Disable **QUIC** in settings; toggle **Auto-reconnect** |
 | Phone kills TZVPN in background | Settings → **Battery optimization** → don't optimize TZVPN |
-| YouTube / streaming buffers | Enable **Disable QUIC**; lower **Max Query Size** on DNS tunnels; try **Slipstream** or **VLESS** |
+| YouTube / streaming buffers | Enable **Disable QUIC**; lower **Max Query Size** on DNS tunnels; try **tz-kitonga** or **VLESS** |
 | Heavy DPI environment | Use **NoizDNS + SSH**, **VLESS + SNI Fragmentation**, or **Tor + Snowflake** (Full) |
 | VLESS times out via Cloudflare | Set **CDN IP** to a known clean Cloudflare IP; verify **TLS SNI** matches your CF cert |
 | SOCKS5 says "Connected" but no internet | Upstream proxy isn't actually reaching the open internet — SOCKS5 has no end-to-end check. Test the proxy independently, or wrap it with SSH (use a `+ SSH` variant) so failure becomes visible. |
@@ -613,20 +613,20 @@ TZVPN یک ابزار رایگان و **source-available** (سورس‌کدش ق
 | **DNSTT** | DNS (KCP + Noise) | ترافیک را در کوئری DNS می‌فرستد | شبکه‌هایی که فقط DNS باز است |
 | **NoizDNS** | DNS (KCP + Noise) | DNSTT با مقاومت در برابر DPI (انکودینگ base36/hex، حذف پیشوند CDN) | شبکه‌های تحت بازرسی شدید |
 | **VayDNS** | DNS (KCP + Curve25519) | تونل DNS بهینه و قابل تنظیم | کاربران حرفه‌ای |
-| **Slipstream** | QUIC | تونل پرسرعت QUIC | شبکه‌های سالم |
+| **tz-kitonga** | QUIC | تونل پرسرعت QUIC | شبکه‌های سالم |
 | **SSH** | SSH | تونل SSH ساده و رمزنگاری‌شده | امنیت ساده، بدون نشت |
 | **NaiveProxy** | HTTPS (Caddy + اثرانگشت TLS کروم) | HTTPS با اثرانگشت اصیل کروم | عبور از DPI روی HTTPS |
 | **VLESS** | WebSocket (روی TLS یا plain) | VLESS روی WebSocket پشت CDN (مثل Cloudflare) | فرانتینگ CDN، بسیار رایج در ایران |
 | **DOH** | DNS over HTTPS | فقط DNS را رمزنگاری می‌کند | عبور از فیلترینگ DNS |
 | **Tor** | Tor + Snowflake/obfs4/Meek | شبکه‌ی ناشناس | ناشناسی بالا |
-| **+ نسخه‌های SSH** | (DNSTT/NoizDNS/VayDNS/Slipstream/NaiveProxy/VLESS) + SSH | یک لایه‌ی SSH اضافه — نشت DNS صفر | حداکثر امنیت |
+| **+ نسخه‌های SSH** | (DNSTT/NoizDNS/VayDNS/tz-kitonga/NaiveProxy/VLESS) + SSH | یک لایه‌ی SSH اضافه — نشت DNS صفر | حداکثر امنیت |
 
 **کدام را انتخاب کنم؟**
 
 - تازه‌کار و گیج؟ → **DNSTT** (پیش‌فرض).
 - DPI سخت؟ → **NoizDNS** یا **NoizDNS + SSH**.
 - می‌خوای پشت CloudFlare قایم شی؟ → **VLESS** یا **NaiveProxy**.
-- سرعت خام روی شبکه‌ی تمیز؟ → **Slipstream**.
+- سرعت خام روی شبکه‌ی تمیز؟ → **tz-kitonga**.
 - ناشناسی؟ → **Tor** (فقط نسخه Full).
 
 ---
@@ -638,7 +638,7 @@ TZVPN در دو نسخه عرضه می‌شود — تفاوت در حجم APK �
 | ویژگی | Full | Lite |
 |-------|:----:|:----:|
 | DNSTT، NoizDNS، VayDNS | ✓ | ✓ |
-| Slipstream (QUIC) | ✓ | ✓ |
+| tz-kitonga (QUIC) | ✓ | ✓ |
 | SSH | ✓ | ✓ |
 | DoH | ✓ | ✓ |
 | VLESS | ✓ | ✓ |
@@ -785,7 +785,7 @@ TZVPN *کلاینت* است. برای کار به یک **سرور** نیاز د�
 **فقط E2E**
 - **Resolver Port** — پورتی که ریزالور گوش می‌دهد (۵۳ مگر تغییر داده باشید).
 - **E2E Timeout** — تایم‌اوت تست تونل هر ریزالور. پیش‌فرض ۱۵۰۰۰ ms.
-- **E2E Concurrency** — تعداد تست تونل موازی. ۱ تا ۱۰. **Slipstream حداکثر ۱** چون تونل‌های QUIC نمی‌توانند پورت را به اشتراک بگذارند.
+- **E2E Concurrency** — تعداد تست تونل موازی. ۱ تا ۱۰. **tz-kitonga حداکثر ۱** چون تونل‌های QUIC نمی‌توانند پورت را به اشتراک بگذارند.
 - **Test URL** — چیزی که تونل برای اثبات اتصال می‌گیرد. پیش‌فرض `http://www.gstatic.com/generate_204` (پاسخ 204 No Content — کوچک، سریع، به DNS داخل تونل وابسته نیست).
 - **Full Verification** — وقتی روشن است، URL تست را از تونل زنده می‌گیرد؛ وقتی خاموش، فقط تأیید می‌کند که handshake تونل کامل شد.
 
@@ -947,7 +947,7 @@ TZVPN *کلاینت* است. برای کار به یک **سرور** نیاز د�
 - **Idle Timeout / Keep-Alive / UDP Timeout**
 - **ClientID Size** — باید با سرور یکی باشد (پیش‌فرض ۲؛ در حالت DNSTT-compat برابر ۸)
 
-### Slipstream
+### tz-kitonga
 - Domain + Public Key
 - **Congestion Control** — BBR / DCUBIC
 - **Keep-Alive Interval**
@@ -1018,7 +1018,7 @@ TZVPN *کلاینت* است. برای کار به یک **سرور** نیاز د�
 **نتیجه‌ی عملی:**
 
 - حالت SOCKS5 را یک **آداپتور انتقال** برای پراکسی‌ای که از قبل به آن اعتماد دارید بدانید، نه یک تست تونل. اگر پراکسی خراب یا جغرافیا-محدود باشد، «Connected» سبز می‌بینید بدون اینکه یک بایت رد و بدل شود.
-- برای یک تونل واقعیِ ضد سانسور، **SSH** یا یکی از حالت‌های SSH-wrapped (NoizDNS+SSH، Slipstream+SSH، VLESS+SSH، NaiveProxy+SSH و …) را ترجیح دهید — این‌ها وقتی چیزی خراب است شکست را آشکار اعلام می‌کنند.
+- برای یک تونل واقعیِ ضد سانسور، **SSH** یا یکی از حالت‌های SSH-wrapped (NoizDNS+SSH، tz-kitonga+SSH، VLESS+SSH، NaiveProxy+SSH و …) را ترجیح دهید — این‌ها وقتی چیزی خراب است شکست را آشکار اعلام می‌کنند.
 - اگر مجبورید SOCKS5 ساده استفاده کنید، تا حد ممکن **SSH را روی آن سوار کنید** — خانواده‌ی `+ SSH` از پراکسی SOCKS5 به‌عنوان transport استفاده می‌کند و یک نشست واقعی SSH از داخلش رد می‌کند. به این ترتیب گارانتی‌های احراز هویت و liveness بازمی‌گردند.
 
 ### DOH
@@ -1039,7 +1039,7 @@ TZVPN *کلاینت* است. برای کار به یک **سرور** نیاز د�
 | وصل می‌شود ولی چند ثانیه بعد قطع می‌شود | **VPN MTU** را پایین بیار (1280)، **DNS Workers = 1** یا حالت *per-query* |
 | وصل است ولی اینترنت نیست | **Disable QUIC** را روشن کن؛ **Auto-reconnect** را تست کن |
 | اندروید TZVPN را در پس‌زمینه می‌کشد | تنظیمات → **بهینه‌سازی باتری** → TZVPN را بهینه نکن |
-| یوتیوب / استریم بافر می‌کند | **Disable QUIC**؛ **Max Query Size** را روی تونل DNS کم کن؛ **Slipstream** یا **VLESS** را امتحان کن |
+| یوتیوب / استریم بافر می‌کند | **Disable QUIC**؛ **Max Query Size** را روی تونل DNS کم کن؛ **tz-kitonga** یا **VLESS** را امتحان کن |
 | محیط DPI سختگیر | از **NoizDNS + SSH**، **VLESS + SNI Fragmentation**، یا **Tor + Snowflake** (Full) استفاده کن |
 | VLESS از Cloudflare تایم‌اوت می‌شود | **CDN IP** را روی یک IP تمیز معروف Cloudflare بگذار؛ **TLS SNI** باید با گواهی CF تو بخواند |
 | SOCKS5 می‌گوید «Connected» ولی اینترنت نیست | پراکسی ریموت واقعاً به اینترنت آزاد دسترسی ندارد — SOCKS5 تست end-to-end ندارد. پراکسی را مستقل تست کنید، یا با SSH دور آن را بپیچید (از حالت `+ SSH` استفاده کنید) تا خرابی آشکار شود. |

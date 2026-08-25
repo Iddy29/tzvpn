@@ -23,7 +23,7 @@ type TunnelConfig struct {
 
 	// Transport-specific configs (only one set per tunnel)
 	DNSTT      *DNSTTConfig      `json:"dnstt,omitempty"`
-	Slipstream *SlipstreamConfig `json:"slipstream,omitempty"`
+	tz-kitonga *SlipstreamConfig `json:"slipstream,omitempty"`
 	VayDNS     *VayDNSConfig     `json:"vaydns,omitempty"`
 	Naive      *NaiveConfig      `json:"naive,omitempty"`
 	StunTLS    *StunTLSConfig    `json:"stuntls,omitempty"`

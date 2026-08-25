@@ -141,9 +141,9 @@ func handleSystemDiag(ctx *actions.Context) error {
 				checkFileExists(check, tag, "private key", t.VayDNS.PrivateKey)
 			}
 		case config.TransportSlipstream:
-			if t.Slipstream != nil {
-				checkFileExists(check, tag, "certificate", t.Slipstream.Cert)
-				checkFileExists(check, tag, "key", t.Slipstream.Key)
+			if t.tz-kitonga != nil {
+				checkFileExists(check, tag, "certificate", t.tz-kitonga.Cert)
+				checkFileExists(check, tag, "key", t.tz-kitonga.Key)
 			}
 		}
 

@@ -32,7 +32,7 @@
 
 ## 1. What CyberGate is
 
-CyberGate is a one-binary tunnel manager for Linux servers. You run it on your VPS, and it sets up the server side of every protocol SlipNet supports — DNSTT, NoizDNS, VayDNS, Slipstream, NaiveProxy, and StunTLS — with `systemd` services, a DNS router, user management, a live dashboard, and `slipnet://` URI generation for one-tap import in the SlipNet app.
+CyberGate is a one-binary tunnel manager for Linux servers. You run it on your VPS, and it sets up the server side of every protocol SlipNet supports — DNSTT, NoizDNS, VayDNS, tz-kitonga, NaiveProxy, and StunTLS — with `systemd` services, a DNS router, user management, a live dashboard, and `slipnet://` URI generation for one-tap import in the SlipNet app.
 
 In practice: **one command** turns a fresh Ubuntu/Debian VPS into a full anti-censorship endpoint that your phone (and your friends' phones) can connect to.
 
@@ -52,7 +52,7 @@ What CyberGate does for you:
 - A **Linux VPS** with **root SSH access** — Ubuntu 20.04+, Debian 10+, or any modern systemd-based distro.
 - A **domain name** with control over its DNS records (Cloudflare, Namecheap, Porkbun, your registrar's panel, anything works).
 - **Open ports** on the server:
-  - `53/udp` for DNS tunnels (DNSTT, NoizDNS, VayDNS, Slipstream)
+  - `53/udp` for DNS tunnels (DNSTT, NoizDNS, VayDNS, tz-kitonga)
   - `443/tcp` for NaiveProxy and StunTLS
 - About **15 minutes** of your time.
 - **Cost estimate:** a $4–6/month VPS handles personal use comfortably.
@@ -91,8 +91,8 @@ A    example.com      →  <server IP>          (only if using NaiveProxy / Stun
 
 NS   t.example.com    →  ns.example.com       (DNSTT/NoizDNS — SOCKS backend)
 NS   ts.example.com   →  ns.example.com       (DNSTT/NoizDNS — SSH backend)
-NS   s.example.com    →  ns.example.com       (Slipstream — SOCKS backend)
-NS   ss.example.com   →  ns.example.com       (Slipstream — SSH backend)
+NS   s.example.com    →  ns.example.com       (tz-kitonga — SOCKS backend)
+NS   ss.example.com   →  ns.example.com       (tz-kitonga — SSH backend)
 NS   v.example.com    →  ns.example.com       (VayDNS — SOCKS backend)
 NS   vs.example.com   →  ns.example.com       (VayDNS — SSH backend)
 ```
@@ -225,7 +225,7 @@ CyberGate manages six transports. Pick based on the network your users have to e
 | **DNSTT** | 53/udp | Encrypted DNS tunnel (Curve25519). Mature, reliable | Default; also serves NoizDNS clients on the same port |
 | **NoizDNS** | 53/udp | Same server as DNSTT — clients enable DPI evasion | Network does DNS-tunnel detection |
 | **VayDNS** | 53/udp | KCP-based DNS tunnel with tunable wire format | Advanced; flaky DNS paths; need per-record-type tweaks |
-| **Slipstream** | 53/udp | QUIC over DNS, very fast | Clean networks; users want speed |
+| **tz-kitonga** | 53/udp | QUIC over DNS, very fast | Clean networks; users want speed |
 | **NaiveProxy** | 443/tcp | Caddy + forwardproxy plugin, real Let's Encrypt cert, decoy site | DNS-tunneling banned; HTTPS still works |
 | **StunTLS** | 443/tcp | SSH-over-TLS / SSH-over-WebSocket, self-signed cert | No domain available; or want CDN-friendly WS layer |
 
@@ -247,7 +247,7 @@ sudo cybergate tunnel add --transport vaydns --backend both \
   --record-type txt --idle-timeout 10s --keep-alive 2s \
   --clientid-size 2 --queue-size 512
 
-# Slipstream over QUIC
+# tz-kitonga over QUIC
 sudo cybergate tunnel add --transport slipstream --backend ssh \
   --tag myslip --domain s.example.com
 
@@ -501,7 +501,7 @@ journalctl -u cybergate-socks5 -n 200 --no-pager
 | `/etc/cybergate/tunnels/` | Per-tunnel keys, certs, configs |
 | `/usr/local/bin/cybergate` | CyberGate binary |
 | `/usr/local/bin/dnstt-server` | DNSTT/NoizDNS transport |
-| `/usr/local/bin/slipstream-server` | Slipstream transport |
+| `/usr/local/bin/slipstream-server` | tz-kitonga transport |
 | `/usr/local/bin/vaydns-server` | VayDNS transport |
 | `/usr/local/bin/caddy-naive` | NaiveProxy (Caddy + forwardproxy plugin) |
 | `/etc/caddy/Caddyfile` | Caddy config (managed by CyberGate) |
@@ -564,7 +564,7 @@ SlipNet source: https://github.com/anonvector/SlipNet
 
 ## ۱. CyberGate چیست
 
-CyberGate یک مدیر تونل تک‌باینری برای سرورهای لینوکس است. روی VPS اجرا می‌کنید و سمت سرور تمام پروتکل‌هایی که SlipNet پشتیبانی می‌کند — DNSTT، NoizDNS، VayDNS، Slipstream، NaiveProxy و StunTLS — به همراه سرویس‌های `systemd`، روتر DNS، مدیریت کاربر، داشبورد زنده و تولید لینک `slipnet://` برای ایمپورت یک‌ضربه‌ای در اپ راه‌اندازی می‌کند.
+CyberGate یک مدیر تونل تک‌باینری برای سرورهای لینوکس است. روی VPS اجرا می‌کنید و سمت سرور تمام پروتکل‌هایی که SlipNet پشتیبانی می‌کند — DNSTT، NoizDNS، VayDNS، tz-kitonga، NaiveProxy و StunTLS — به همراه سرویس‌های `systemd`، روتر DNS، مدیریت کاربر، داشبورد زنده و تولید لینک `slipnet://` برای ایمپورت یک‌ضربه‌ای در اپ راه‌اندازی می‌کند.
 
 به‌طور خلاصه: **یک دستور** کافی است تا یک VPS تازه‌ی Ubuntu/Debian تبدیل به یک نقطه‌ی کامل ضد سانسور شود که گوشی شما (و دوستانتان) به آن وصل می‌شود.
 
@@ -584,7 +584,7 @@ CyberGate برای شما این کارها را انجام می‌دهد:
 - یک **VPS لینوکس** با **دسترسی روت SSH** — اوبونتو ۲۰.۰۴ به بالا، دبیان ۱۰ به بالا یا هر توزیع مدرن مبتنی بر systemd.
 - یک **دامنه** که DNS آن را در دست دارید (Cloudflare، Namecheap، Porkbun، یا پنل ثبت‌کننده).
 - پورت‌های باز روی سرور:
-  - `53/udp` برای تونل‌های DNS (DNSTT، NoizDNS، VayDNS، Slipstream)
+  - `53/udp` برای تونل‌های DNS (DNSTT، NoizDNS، VayDNS، tz-kitonga)
   - `443/tcp` برای NaiveProxy و StunTLS
 - حدود **۱۵ دقیقه** زمان.
 - **هزینه:** یک VPS ۴ تا ۶ دلاری در ماه برای مصرف شخصی کافی است.
@@ -623,8 +623,8 @@ A    example.com      →  <server IP>          (فقط اگر NaiveProxy / Stun
 
 NS   t.example.com    →  ns.example.com       (DNSTT/NoizDNS — backend SOCKS)
 NS   ts.example.com   →  ns.example.com       (DNSTT/NoizDNS — backend SSH)
-NS   s.example.com    →  ns.example.com       (Slipstream — backend SOCKS)
-NS   ss.example.com   →  ns.example.com       (Slipstream — backend SSH)
+NS   s.example.com    →  ns.example.com       (tz-kitonga — backend SOCKS)
+NS   ss.example.com   →  ns.example.com       (tz-kitonga — backend SSH)
 NS   v.example.com    →  ns.example.com       (VayDNS — backend SOCKS)
 NS   vs.example.com   →  ns.example.com       (VayDNS — backend SSH)
 ```
@@ -757,7 +757,7 @@ CyberGate شش transport را مدیریت می‌کند. بر اساس شبکه
 | **DNSTT** | 53/udp | تونل DNS رمزنگاری‌شده (Curve25519). پایدار، بالغ | پیش‌فرض؛ سرور یکسان به کلاینت‌های NoizDNS هم پاسخ می‌دهد |
 | **NoizDNS** | 53/udp | همان سرور DNSTT — کلاینت‌ها مقاومت DPI را روشن می‌کنند | شبکه DNS-tunnel-detection دارد |
 | **VayDNS** | 53/udp | تونل DNS مبتنی بر KCP، فرمت سیمی قابل تنظیم | پیشرفته؛ مسیر DNS ناپایدار؛ نیاز به تنظیم record-type |
-| **Slipstream** | 53/udp | QUIC روی DNS، خیلی سریع | شبکه سالم؛ کاربر سرعت می‌خواهد |
+| **tz-kitonga** | 53/udp | QUIC روی DNS، خیلی سریع | شبکه سالم؛ کاربر سرعت می‌خواهد |
 | **NaiveProxy** | 443/tcp | Caddy + forwardproxy، گواهی Let's Encrypt واقعی، سایت decoy | تونل DNS بسته است؛ HTTPS باز است |
 | **StunTLS** | 443/tcp | SSH روی TLS / SSH روی WebSocket، گواهی self-signed | دامنه نداری؛ یا لایه‌ی WS سازگار با CDN می‌خواهی |
 
@@ -779,7 +779,7 @@ sudo cybergate tunnel add --transport vaydns --backend both \
   --record-type txt --idle-timeout 10s --keep-alive 2s \
   --clientid-size 2 --queue-size 512
 
-# Slipstream روی QUIC
+# tz-kitonga روی QUIC
 sudo cybergate tunnel add --transport slipstream --backend ssh \
   --tag myslip --domain s.example.com
 
@@ -1033,7 +1033,7 @@ journalctl -u cybergate-socks5 -n 200 --no-pager
 | `/etc/cybergate/tunnels/` | کلید، گواهی و کانفیگ هر تونل |
 | `/usr/local/bin/cybergate` | باینری CyberGate |
 | `/usr/local/bin/dnstt-server` | باینری DNSTT/NoizDNS |
-| `/usr/local/bin/slipstream-server` | باینری Slipstream |
+| `/usr/local/bin/slipstream-server` | باینری tz-kitonga |
 | `/usr/local/bin/vaydns-server` | باینری VayDNS |
 | `/usr/local/bin/caddy-naive` | NaiveProxy (Caddy + پلاگین forwardproxy) |
 | `/etc/caddy/Caddyfile` | کانفیگ Caddy (مدیریت‌شده توسط CyberGate) |

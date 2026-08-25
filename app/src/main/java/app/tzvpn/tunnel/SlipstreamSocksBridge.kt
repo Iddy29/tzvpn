@@ -21,21 +21,21 @@ import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 
 /**
- * SOCKS5 bridge for Slipstream non-SSH mode.
+ * SOCKS5 bridge for tz-kitonga non-SSH mode.
  *
- * Slipstream tunnels raw TCP to the remote server. The SOCKS5 handshake goes
+ * tz-kitonga tunnels raw TCP to the remote server. The SOCKS5 handshake goes
  * through to the remote Dante proxy which requires user/pass auth and only
  * supports CONNECT (0x01), NOT FWD_UDP (0x05). This bridge sits between
- * hev-socks5-tunnel and Slipstream:
+ * hev-socks5-tunnel and tz-kitonga:
  *
- * - CONNECT (0x01): Chains to Slipstream → Dante (with user/pass auth)
+ * - CONNECT (0x01): Chains to tz-kitonga → Dante (with user/pass auth)
  * - FWD_UDP (0x05) DNS: DNS-over-TCP through persistent worker pool via Dante,
  *   falls back to DoH (Cloudflare 1.1.1.1) if all workers fail.
  * - FWD_UDP (0x05) non-DNS: Dropped silently (browser falls back to TCP CONNECT)
  *
  * Traffic flow:
  * App -> TUN -> hev-socks5-tunnel -> SlipstreamSocksBridge (proxyPort+1)
- *   TCP: -> SOCKS5 CONNECT (with auth) -> Slipstream (proxyPort) -> Dante -> Server
+ *   TCP: -> SOCKS5 CONNECT (with auth) -> tz-kitonga (proxyPort) -> Dante -> Server
  *   DNS: -> FWD_UDP -> persistent DNS worker pool (via Dante) -> DNS server
  */
 object SlipstreamSocksBridge {
@@ -56,7 +56,7 @@ object SlipstreamSocksBridge {
     private const val DNS_KEEPALIVE_INTERVAL_MS = 20_000L
     private const val DNS_WORKER_TIMEOUT_MS = 15_000
     // Clean DNS resolved at the REMOTE server (through Dante SOCKS5 CONNECT).
-    // Unlike SSH (direct-tcpip bypasses Dante), Slipstream goes through Dante which
+    // Unlike SSH (direct-tcpip bypasses Dante), tz-kitonga goes through Dante which
     // may block or mangle CONNECT to localhost (127.0.0.53). Use public DNS instead.
     private const val PRIMARY_DNS_HOST = "8.8.8.8"
     // Fallback if primary is unreachable through Dante
@@ -72,7 +72,7 @@ object SlipstreamSocksBridge {
     private var acceptorThread: Thread? = null
     private val running = AtomicBoolean(false)
     private val connectionThreads = CopyOnWriteArrayList<Thread>()
-    // Track all remote sockets (connections to Slipstream) for explicit cleanup
+    // Track all remote sockets (connections to tz-kitonga) for explicit cleanup
     private val remoteSockets = CopyOnWriteArrayList<Socket>()
 
     // Tunnel-level byte counters (only counts data actually relayed through the tunnel)
@@ -83,7 +83,7 @@ object SlipstreamSocksBridge {
     private val carriedRxBytes = AtomicLong(0)
 
     // --- DNS Worker Pool ---
-    // Persistent SOCKS5 connections through Slipstream→Dante to DNS server.
+    // Persistent SOCKS5 connections through tz-kitonga→Dante to DNS server.
     // Each worker holds an open TCP connection to the DNS server (via SOCKS5 CONNECT),
     // allowing DNS-over-TCP queries without per-query connection overhead (~4 RTTs saved).
     private class DnsWorker(
@@ -186,8 +186,8 @@ object SlipstreamSocksBridge {
         localAuthPassword: String? = null
     ): Result<Unit> {
         Log.i(TAG, "========================================")
-        Log.i(TAG, "Starting Slipstream SOCKS5 bridge")
-        Log.i(TAG, "  Slipstream: $slipstreamHost:$slipstreamPort")
+        Log.i(TAG, "Starting tz-kitonga SOCKS5 bridge")
+        Log.i(TAG, "  tz-kitonga: $slipstreamHost:$slipstreamPort")
         Log.i(TAG, "  Listen: $listenHost:$listenPort")
         Log.i(TAG, "  Local auth: ${if (!localAuthUsername.isNullOrEmpty()) "enabled" else "disabled"}")
         Log.i(TAG, "  DNS: ${dnsServer ?: PRIMARY_DNS_HOST} (fallback: ${dnsFallback ?: FALLBACK_DNS_HOST})")
@@ -269,7 +269,7 @@ object SlipstreamSocksBridge {
         dnsKeepaliveThread?.interrupt()
         dnsKeepaliveThread = null
 
-        // Close all DNS workers (connections to Slipstream port)
+        // Close all DNS workers (connections to tz-kitonga port)
         for (i in 0 until dnsPoolSize) {
             val worker = dnsWorkers[i]
             dnsWorkers[i] = null
@@ -278,7 +278,7 @@ object SlipstreamSocksBridge {
             }
         }
 
-        // Close all remote sockets (CONNECT chains to Slipstream port)
+        // Close all remote sockets (CONNECT chains to tz-kitonga port)
         for (sock in remoteSockets) {
             try { sock.close() } catch (_: Exception) {}
         }
@@ -338,7 +338,7 @@ object SlipstreamSocksBridge {
 
     /**
      * Pre-warm DNS worker pool: open persistent SOCKS5 connections to the DNS server
-     * through Slipstream→Dante. Each worker is a ready-to-use DNS-over-TCP channel.
+     * through tz-kitonga→Dante. Each worker is a ready-to-use DNS-over-TCP channel.
      */
     private fun prewarmDnsWorkers() {
         Log.i(TAG, "DNS workers target: $dnsTargetHost:53 (fallback: $dnsFallbackHost, pool=$dnsPoolSize)")
@@ -384,7 +384,7 @@ object SlipstreamSocksBridge {
     }
 
     /**
-     * Create a single DNS worker: Socket → Slipstream → SOCKS5 auth → CONNECT to DNS:53.
+     * Create a single DNS worker: Socket → tz-kitonga → SOCKS5 auth → CONNECT to DNS:53.
      * Returns a ready-to-use DnsWorker, or null on failure.
      */
     private fun createDnsWorker(): DnsWorker? {
@@ -559,11 +559,11 @@ object SlipstreamSocksBridge {
      *
      * Phase 1: Try ALL existing live workers round-robin (non-blocking lock).
      * Phase 2: If all dead/busy, recreate ONE worker inline and use it.
-     * Phase 3: Last resort — open a per-query connection (still through Slipstream).
+     * Phase 3: Last resort — open a per-query connection (still through tz-kitonga).
      * Phase 4: DoH fallback if all TCP methods fail.
      */
     private fun forwardDnsPooled(payload: ByteArray): ByteArray? {
-        // Fail fast if Slipstream tunnel is dead
+        // Fail fast if tz-kitonga tunnel is dead
         if (!SlipstreamBridge.isNativeRunning()) return null
         if (isCircuitOpen()) return null
 
@@ -768,7 +768,7 @@ object SlipstreamSocksBridge {
                         return@Thread
                     }
 
-                    // Handle CONNECT (cmd 0x01) — chain through Slipstream
+                    // Handle CONNECT (cmd 0x01) — chain through tz-kitonga
                     handleConnect(destHost, destPort, rawAddr, portBytes, socket, input, output)
                 }
             } catch (e: Exception) {
@@ -787,7 +787,7 @@ object SlipstreamSocksBridge {
     }
 
     /**
-     * Handle SOCKS5 CONNECT by chaining through Slipstream's SOCKS5 proxy.
+     * Handle SOCKS5 CONNECT by chaining through tz-kitonga's SOCKS5 proxy.
      * With domain routing: sniffs TLS SNI / HTTP Host to decide bypass vs tunnel.
      */
     private fun handleConnect(
@@ -875,7 +875,7 @@ object SlipstreamSocksBridge {
     }
 
     /**
-     * Connect through Slipstream's SOCKS5 proxy and bridge bidirectionally.
+     * Connect through tz-kitonga's SOCKS5 proxy and bridge bidirectionally.
      * If [sendReply] is true, sends SOCKS5 success reply to client after upstream connects.
      */
     private fun connectViaSlipstream(
@@ -888,9 +888,9 @@ object SlipstreamSocksBridge {
         clientOutput: OutputStream,
         sendReply: Boolean
     ) {
-        // Fail fast if Slipstream tunnel is dead
+        // Fail fast if tz-kitonga tunnel is dead
         if (!SlipstreamBridge.isNativeRunning()) {
-            logd("CONNECT: Slipstream not running, rejecting $destHost:$destPort")
+            logd("CONNECT: tz-kitonga not running, rejecting $destHost:$destPort")
             if (sendReply) {
                 clientOutput.write(byteArrayOf(0x05, 0x04, 0x00, 0x01, 0, 0, 0, 0, 0, 0))
                 clientOutput.flush()
@@ -933,7 +933,7 @@ object SlipstreamSocksBridge {
             remoteSockets.add(remoteSocket)
         } catch (e: Exception) {
             connectSemaphore.release()
-            logd("CONNECT: failed to connect to Slipstream: ${e.message}")
+            logd("CONNECT: failed to connect to tz-kitonga: ${e.message}")
             if (sendReply) {
                 clientOutput.write(byteArrayOf(0x05, 0x05, 0x00, 0x01, 0, 0, 0, 0, 0, 0))
                 clientOutput.flush()
@@ -945,7 +945,7 @@ object SlipstreamSocksBridge {
             val remoteInput = remoteSocket.getInputStream()
             val remoteOutput = remoteSocket.getOutputStream()
 
-            // SOCKS5 greeting to Slipstream → Dante (user/pass auth)
+            // SOCKS5 greeting to tz-kitonga → Dante (user/pass auth)
             val hasAuth = !socksUsername.isNullOrBlank() && !socksPassword.isNullOrBlank()
             if (hasAuth) {
                 remoteOutput.write(byteArrayOf(0x05, 0x01, 0x02))
@@ -958,7 +958,7 @@ object SlipstreamSocksBridge {
             remoteInput.readFully(greetResp)
             val selectedMethod = greetResp[1].toInt() and 0xFF
             if (greetResp[0] != 0x05.toByte() || selectedMethod == 0xFF) {
-                Log.w(TAG, "CONNECT: Slipstream rejected greeting (${greetResp[0]}, ${greetResp[1]})")
+                Log.w(TAG, "CONNECT: tz-kitonga rejected greeting (${greetResp[0]}, ${greetResp[1]})")
                 connectSemaphore.release(); semaphoreReleased = true
                 if (sendReply) {
                     clientOutput.write(byteArrayOf(0x05, 0x01, 0x00, 0x01, 0, 0, 0, 0, 0, 0))
@@ -995,7 +995,7 @@ object SlipstreamSocksBridge {
                 }
             }
 
-            // SOCKS5 CONNECT request to Slipstream
+            // SOCKS5 CONNECT request to tz-kitonga
             val connectReq = byteArrayOf(0x05, 0x01, 0x00) + rawAddr + portBytes
             remoteOutput.write(connectReq)
             remoteOutput.flush()
@@ -1005,7 +1005,7 @@ object SlipstreamSocksBridge {
             remoteInput.readFully(connRespHeader)
 
             if (connRespHeader[1] != 0x00.toByte()) {
-                logd("CONNECT: Slipstream rejected to $destHost:$destPort (rep=${connRespHeader[1]})")
+                logd("CONNECT: tz-kitonga rejected to $destHost:$destPort (rep=${connRespHeader[1]})")
                 connectSemaphore.release(); semaphoreReleased = true
                 if (sendReply) {
                     clientOutput.write(byteArrayOf(0x05, connRespHeader[1], 0x00, 0x01, 0, 0, 0, 0, 0, 0))
@@ -1026,7 +1026,7 @@ object SlipstreamSocksBridge {
             // Release semaphore after handshake — stream is established
             connectSemaphore.release()
             semaphoreReleased = true
-            logd("CONNECT: $destHost:$destPort OK (via Slipstream)")
+            logd("CONNECT: $destHost:$destPort OK (via tz-kitonga)")
 
             // Send success to hev-socks5-tunnel (if not already sent)
             if (sendReply) {
@@ -1155,7 +1155,7 @@ object SlipstreamSocksBridge {
                     }
                 } else {
                     // Non-DNS UDP (QUIC, etc.): drop silently.
-                    // Browser falls back to TCP → CONNECT through Slipstream.
+                    // Browser falls back to TCP → CONNECT through tz-kitonga.
                     null
                 }
 
@@ -1181,7 +1181,7 @@ object SlipstreamSocksBridge {
     }
 
     /**
-     * One-shot DNS-over-TCP through a new Slipstream connection (Phase 3 fallback).
+     * One-shot DNS-over-TCP through a new tz-kitonga connection (Phase 3 fallback).
      * Used when all persistent workers are dead and recreation failed.
      */
     private fun forwardDnsTcpOneShot(payload: ByteArray): ByteArray? {
@@ -1238,7 +1238,7 @@ object SlipstreamSocksBridge {
     }
 
     /**
-     * Forward DNS query via DoH (DNS-over-HTTPS) through Slipstream → Dante tunnel.
+     * Forward DNS query via DoH (DNS-over-HTTPS) through tz-kitonga → Dante tunnel.
      * Fallback when DNS-over-TCP fails. Uses Cloudflare DoH (1.1.1.1).
      *
      * 1. SOCKS5 CONNECT to Cloudflare DoH (1.1.1.1:443) through Dante
@@ -1253,7 +1253,7 @@ object SlipstreamSocksBridge {
         var rawSocket: Socket? = null
         var sslSocket: SSLSocket? = null
         try {
-            // Step 1: Connect to Slipstream (loopback)
+            // Step 1: Connect to tz-kitonga (loopback)
             rawSocket = Socket()
             rawSocket.connect(InetSocketAddress(slipstreamHost, slipstreamPort), TCP_CONNECT_TIMEOUT_MS)
             rawSocket.soTimeout = DNS_WORKER_TIMEOUT_MS
@@ -1262,7 +1262,7 @@ object SlipstreamSocksBridge {
             val rawIn = rawSocket.getInputStream()
             val rawOut = rawSocket.getOutputStream()
 
-            // Step 2: SOCKS5 auth to Dante (through Slipstream tunnel)
+            // Step 2: SOCKS5 auth to Dante (through tz-kitonga tunnel)
             if (!performSocksAuth(rawIn, rawOut)) return null
 
             // Step 3: SOCKS5 CONNECT to Cloudflare DoH (1.1.1.1:443)

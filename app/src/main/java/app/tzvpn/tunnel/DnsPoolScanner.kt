@@ -62,7 +62,7 @@ object DnsPoolScanner {
      * [ResolverScannerRepository.maxE2eConcurrency] (10) because here the user
      * is waiting on a single connect — the throughput win outweighs the
      * extra memory pressure from 20 concurrent DNSTT/Noise/KCP/smux clients.
-     * Slipstream stays at 1 (native singleton).
+     * tz-kitonga stays at 1 (native singleton).
      */
     private const val POOL_CONCURRENCY = 20
 

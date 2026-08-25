@@ -266,7 +266,7 @@ class VpnRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Start the Slipstream SOCKS5 proxy. Call this BEFORE establishing the VPN interface.
+     * Start the tz-kitonga SOCKS5 proxy. Call this BEFORE establishing the VPN interface.
      * This ensures the proxy is ready to handle traffic when the VPN starts routing.
      */
     suspend fun startSlipstreamProxy(
@@ -294,14 +294,14 @@ class VpnRepositoryImpl @Inject constructor(
         val success = startSlipstreamClient(profile.domain, resolvers, profile, debugLogging, listenPort, listenHost)
 
         if (success) {
-            Log.i(TAG, "Slipstream SOCKS5 proxy started successfully")
+            Log.i(TAG, "tz-kitonga SOCKS5 proxy started successfully")
             currentTunnelType = TunnelType.SLIPSTREAM
             // Note: Caller should verify proxy is ready by checking the port
             Result.success(Unit)
         } else {
-            val error = tunnelStartException?.message ?: "Failed to start Slipstream proxy"
+            val error = tunnelStartException?.message ?: "Failed to start tz-kitonga proxy"
             connectedProfile = null
-            Log.e(TAG, "Failed to start Slipstream proxy: $error")
+            Log.e(TAG, "Failed to start tz-kitonga proxy: $error")
             Result.failure(Exception(error))
         }
     }
@@ -739,8 +739,8 @@ class VpnRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Start SlipstreamSocksBridge — a middleman SOCKS5 proxy for Slipstream non-SSH.
-     * Chains CONNECT to Slipstream's SOCKS5 and handles FWD_UDP (DNS/UDP) directly.
+     * Start SlipstreamSocksBridge — a middleman SOCKS5 proxy for tz-kitonga non-SSH.
+     * Chains CONNECT to tz-kitonga's SOCKS5 and handles FWD_UDP (DNS/UDP) directly.
      */
     suspend fun startSlipstreamSocksBridge(
         slipstreamPort: Int,
@@ -971,12 +971,12 @@ class VpnRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Stop the currently running proxy (Slipstream, DNSTT, or SSH).
+     * Stop the currently running proxy (tz-kitonga, DNSTT, or SSH).
      */
     private fun stopCurrentProxy() {
         when (currentTunnelType) {
             TunnelType.SLIPSTREAM -> {
-                Log.d(TAG, "Stopping Slipstream proxy and bridge")
+                Log.d(TAG, "Stopping tz-kitonga proxy and bridge")
                 SlipstreamSocksBridge.stop()
                 SlipstreamBridge.stopClient()
             }
@@ -1018,7 +1018,7 @@ class VpnRepositoryImpl @Inject constructor(
                 DnsDoHProxy.stop()
             }
             TunnelType.SLIPSTREAM_SSH -> {
-                Log.d(TAG, "Stopping Slipstream+SSH: SSH first, then Slipstream")
+                Log.d(TAG, "Stopping tz-kitonga+SSH: SSH first, then tz-kitonga")
                 SshTunnelBridge.stop()
                 SlipstreamBridge.stopClient()
             }
@@ -1095,7 +1095,7 @@ class VpnRepositoryImpl @Inject constructor(
         // Start the tunnel in a background coroutine
         scope.launch(Dispatchers.IO) {
             try {
-                // Step 1: Start the Slipstream DNS tunnel (SOCKS5 proxy)
+                // Step 1: Start the tz-kitonga DNS tunnel (SOCKS5 proxy)
                 val proxyPort = runBlocking { preferencesDataStore.proxyListenPort.first() }
                 val proxyHost = runBlocking { preferencesDataStore.proxyListenAddress.first() }
                 val success = startSlipstreamClient(profile.domain, resolvers, profile, debugLogging, proxyPort, proxyHost)
@@ -1184,7 +1184,7 @@ class VpnRepositoryImpl @Inject constructor(
         if (result.isFailure) {
             val exception = result.exceptionOrNull()
             tunnelStartException = Exception("DNS tunnel failed: ${exception?.message ?: "Unknown error"}", exception)
-            Log.e(TAG, "Failed to start Slipstream client", exception)
+            Log.e(TAG, "Failed to start tz-kitonga client", exception)
         }
         return result.isSuccess
     }
@@ -1200,7 +1200,7 @@ class VpnRepositoryImpl @Inject constructor(
             // Stop hev-socks5-tunnel first
             HevSocks5Tunnel.stop()
 
-            // Then stop the current proxy (Slipstream or DNSTT)
+            // Then stop the current proxy (tz-kitonga or DNSTT)
             stopCurrentProxy()
 
             currentTunFd = null

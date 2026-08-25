@@ -1,12 +1,12 @@
 # CyberGate
 
-Unified tunnel manager for Linux servers. Manages DNS tunnels (DNSTT, NoizDNS, Slipstream, VayDNS) and HTTPS proxies (NaiveProxy) with systemd services, multi-tunnel DNS routing, and user management. Designed for use with the [SlipNet](https://github.com/anonvector/SlipNet) Android VPN app.
+Unified tunnel manager for Linux servers. Manages DNS tunnels (DNSTT, NoizDNS, tz-kitonga, VayDNS) and HTTPS proxies (NaiveProxy) with systemd services, multi-tunnel DNS routing, and user management. Designed for use with the [SlipNet](https://github.com/anonvector/SlipNet) Android VPN app.
 
 [![oosmetrics](https://api.oosmetrics.com/api/v1/badge/achievement/12767996-2dd6-42ed-89a6-5f786c4662b4.svg)](https://oosmetrics.com/repo/anonvector/cybergate)
 
 ## Features
 
-- **Multi-transport**: DNSTT/NoizDNS (DNS tunnels with Curve25519 encryption), Slipstream (QUIC-based DNS), VayDNS (KCP-based DNS with Curve25519), NaiveProxy (HTTPS with Caddy), StunTLS (SSH over TLS + WebSocket)
+- **Multi-transport**: DNSTT/NoizDNS (DNS tunnels with Curve25519 encryption), tz-kitonga (QUIC-based DNS), VayDNS (KCP-based DNS with Curve25519), NaiveProxy (HTTPS with Caddy), StunTLS (SSH over TLS + WebSocket)
 - **Dual backend**: Built-in SOCKS5 proxy or SSH forwarding (custom SSH port supported)
 - **DNS routing**: Single-tunnel or multi-tunnel mode with domain-based dispatch
 - **External routing**: Forward DNS queries for a domain to a custom port for user-managed protocols
@@ -161,7 +161,7 @@ sudo cybergate tunnel add \
   --clientid-size 2 \
   --queue-size 512
 
-# Slipstream tunnel
+# tz-kitonga tunnel
 sudo cybergate tunnel add \
   --transport slipstream \
   --backend ssh \
@@ -283,7 +283,7 @@ sudo cybergate users bulk_add --count=50 --prefix=user
 | Transport | Protocol | Port | Description |
 |-----------|----------|------|-------------|
 | **DNSTT/NoizDNS** | DNS | 53/udp | Curve25519 encrypted DNS tunnel. A single server serves both DNSTT and NoizDNS clients. NoizDNS adds DPI evasion with base36/hex encoding and CDN prefix stripping |
-| **Slipstream** | QUIC DNS | 53/udp | QUIC-based tunnel with certificate authentication |
+| **tz-kitonga** | QUIC DNS | 53/udp | QUIC-based tunnel with certificate authentication |
 | **VayDNS** | KCP DNS | 53/udp | KCP-based DNS tunnel with Curve25519 encryption. Supports configurable idle timeout, keepalive, queue size, and multiple DNS record types |
 | **NaiveProxy** | HTTPS | 443/tcp | Caddy with forwardproxy plugin. Auto-TLS via Let's Encrypt. Probe-resistant with decoy site |
 | **StunTLS** | TLS/WSS | 443/tcp | SSH over TLS + WebSocket proxy. Auto-detects WebSocket, HTTP CONNECT, raw TLS, and payload (DPI bypass) modes. Self-signed TLS cert, no domain required |
@@ -346,7 +346,7 @@ Users are **global**, not scoped to specific tunnels or transports. `cybergate u
 | `/etc/cybergate/tunnels/` | Per-tunnel keys, certs, and configs |
 | `/usr/local/bin/cybergate` | CyberGate binary (includes built-in SOCKS5 proxy) |
 | `/usr/local/bin/dnstt-server` | DNSTT transport binary |
-| `/usr/local/bin/slipstream-server` | Slipstream transport binary |
+| `/usr/local/bin/slipstream-server` | tz-kitonga transport binary |
 | `/usr/local/bin/vaydns-server` | VayDNS transport binary |
 | `/usr/local/bin/caddy-naive` | Caddy with NaiveProxy plugin |
 

@@ -888,7 +888,7 @@ fun MainScreen(
                         AddMenuGridItem(
                             modifier = tileMod,
                             icon = Icons.Default.Waves,
-                            title = "Slipstream",
+                            title = "tz-kitonga",
                             onClick = {
                                 showAddMenu = false
                                 onNavigateToAddProfile("slipstream")
@@ -1003,7 +1003,7 @@ fun MainScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("TZVPN Lite is a lightweight version with a smaller app size.")
                     Text("Included protocols:", fontWeight = FontWeight.Bold)
-                    Text("• Slipstream / Slipstream + SSH")
+                    Text("• tz-kitonga / tz-kitonga + SSH")
                     Text("• DNSTT / DNSTT + SSH")
                     Text("• NoizDNS / NoizDNS + SSH")
                     Text("• VayDNS / VayDNS + SSH")

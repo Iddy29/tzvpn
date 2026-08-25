@@ -326,7 +326,7 @@ class ResolverScannerRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Tunnel realism test — sends a query that mimics real dnstt/Slipstream wire
+     * Tunnel realism test — sends a query that mimics real dnstt/tz-kitonga wire
      * format: a long base32-encoded random payload as the subdomain with QTYPE=TXT.
      * DPI systems that fingerprint DNS tunnels by entropy/length/record-type will
      * drop this query while allowing the shorter random-subdomain tests above.
@@ -341,7 +341,7 @@ class ResolverScannerRepositoryImpl @Inject constructor(
         transport: DnsTransport = DnsTransport.UDP
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            // Generate a random payload roughly the size dnstt/Slipstream would use,
+            // Generate a random payload roughly the size dnstt/tz-kitonga would use,
             // split into 57-char base32 labels. Cap at ~130 random bytes (≈208 base32
             // chars + label-length octets + suffix) to stay under the 255-octet QNAME
             // wire limit. querySize == 0 means "full capacity" → use the cap.
@@ -581,7 +581,7 @@ class ResolverScannerRepositoryImpl @Inject constructor(
     }
 
     /**
-     * RFC 4648 base32 encode (A-Z 2-7, no padding) — matches dnstt/Slipstream alphabet.
+     * RFC 4648 base32 encode (A-Z 2-7, no padding) — matches dnstt/tz-kitonga alphabet.
      */
     private fun base32Encode(data: ByteArray): String {
         val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
@@ -604,7 +604,7 @@ class ResolverScannerRepositoryImpl @Inject constructor(
 
     /**
      * Insert dots every 57 characters from the right so each DNS label stays ≤ 57 chars,
-     * matching the Slipstream dotify convention.
+     * matching the tz-kitonga dotify convention.
      */
     private fun dotifyBase32(encoded: String): String {
         if (encoded.length <= 57) return encoded
@@ -1030,7 +1030,7 @@ class ResolverScannerRepositoryImpl @Inject constructor(
     ): E2eTestResult = withContext(Dispatchers.IO) {
         when (profile.tunnelType) {
             TunnelType.SLIPSTREAM, TunnelType.SLIPSTREAM_SSH ->
-                // Slipstream native lib is singleton — fall back to shared bridge
+                // tz-kitonga native lib is singleton — fall back to shared bridge
                 testResolverSlipstream(resolverHost, resolverPort, profile, testUrl, timeoutMs, onPhaseUpdate, fullVerification)
             TunnelType.DNSTT, TunnelType.DNSTT_SSH ->
                 testResolverDnsttIsolated(resolverHost, resolverPort, profile, testUrl, timeoutMs, onPhaseUpdate, fullVerification = fullVerification)
@@ -1610,7 +1610,7 @@ class ResolverScannerRepositoryImpl @Inject constructor(
                 val isSshVariant = profile.tunnelType == TunnelType.SLIPSTREAM_SSH
 
                 // Fast scan mode: QUIC handshake proves the tunnel transport is
-                // alive. For non-SSH Slipstream, additionally run a SOCKS5
+                // alive. For non-SSH tz-kitonga, additionally run a SOCKS5
                 // greet against the remote Dante so wrong user/pass credentials
                 // surface as a test failure (warmupDnsttTunnel is misnamed — it's
                 // a generic local-SOCKS5 → remote-Dante warmup, tunnel-agnostic).

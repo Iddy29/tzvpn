@@ -256,7 +256,7 @@ func addSingleTunnel(ctx *actions.Context, cfg *config.Config, transport_, backe
 		if err := certs.GenerateSelfSigned(certPath, keyPath, domain); err != nil {
 			return actions.NewError(actions.TunnelAdd, "cert generation failed", err)
 		}
-		tunnel.Slipstream = &config.SlipstreamConfig{
+		tunnel.tz-kitonga = &config.SlipstreamConfig{
 			Cert: certPath,
 			Key:  keyPath,
 		}

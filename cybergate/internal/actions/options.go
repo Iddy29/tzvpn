@@ -5,7 +5,7 @@ package actions
 // TransportOptions is the full list shown in `tunnel add`.
 var TransportOptions = []SelectOption{
 	{Value: "dnstt", Label: "DNSTT / NoizDNS — DNS tunnel"},
-	{Value: "slipstream", Label: "Slipstream — QUIC DNS tunnel"},
+	{Value: "slipstream", Label: "tz-kitonga — QUIC DNS tunnel"},
 	{Value: "vaydns", Label: "VayDNS — KCP DNS tunnel"},
 	{Value: "naive", Label: "NaiveProxy — HTTPS proxy with Caddy"},
 	{Value: "stuntls", Label: "StunTLS — SSH over TLS + WebSocket proxy"},
@@ -19,7 +19,7 @@ var TransportOptions = []SelectOption{
 // wouldn't exist yet during initial setup.
 var InstallTransportOptions = []SelectOption{
 	{Value: "dnstt", Label: "DNSTT / NoizDNS — DNS tunnel"},
-	{Value: "slipstream", Label: "Slipstream — QUIC DNS tunnel"},
+	{Value: "slipstream", Label: "tz-kitonga — QUIC DNS tunnel"},
 	{Value: "vaydns", Label: "VayDNS — KCP DNS tunnel"},
 	{Value: "naive", Label: "NaiveProxy — HTTPS proxy with Caddy"},
 	{Value: "stuntls", Label: "StunTLS — SSH over TLS + WebSocket proxy"},

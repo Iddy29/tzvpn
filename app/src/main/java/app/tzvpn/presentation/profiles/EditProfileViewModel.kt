@@ -1484,7 +1484,7 @@ class EditProfileViewModel @Inject constructor(
             }
         }
 
-        // SSH validation (SSH-only, DNSTT+SSH, NoizDNS+SSH, Slipstream+SSH, and NAIVE_SSH tunnel types)
+        // SSH validation (SSH-only, DNSTT+SSH, NoizDNS+SSH, tz-kitonga+SSH, and NAIVE_SSH tunnel types)
         if (state.tunnelType == TunnelType.SSH || state.tunnelType == TunnelType.DNSTT_SSH || state.tunnelType == TunnelType.NOIZDNS_SSH || state.tunnelType == TunnelType.SLIPSTREAM_SSH || state.tunnelType == TunnelType.NAIVE_SSH) {
             if (state.sshUsername.isBlank()) {
                 _uiState.value = _uiState.value.copy(sshUsernameError = "SSH username is required")
@@ -1506,7 +1506,7 @@ class EditProfileViewModel @Inject constructor(
             }
         }
 
-        // SSH port validation (SSH-only, DNSTT+SSH, NoizDNS+SSH, Slipstream+SSH, and NAIVE_SSH)
+        // SSH port validation (SSH-only, DNSTT+SSH, NoizDNS+SSH, tz-kitonga+SSH, and NAIVE_SSH)
         if (state.tunnelType == TunnelType.SSH || state.tunnelType == TunnelType.DNSTT_SSH || state.tunnelType == TunnelType.NOIZDNS_SSH || state.tunnelType == TunnelType.SLIPSTREAM_SSH || state.tunnelType == TunnelType.NAIVE_SSH) {
             val sshPort = state.sshPort.toIntOrNull()
             if (sshPort == null || sshPort !in 1..65535) {
@@ -1714,7 +1714,7 @@ class EditProfileViewModel @Inject constructor(
     }
 
     /**
-     * Validates domain format for DNSTT and Slipstream tunnel types.
+     * Validates domain format for DNSTT and tz-kitonga tunnel types.
      * These require a proper DNS domain name (e.g., "t.example.com").
      * SSH tunnel type allows IP addresses as the domain field is the SSH host.
      * @return error message if invalid, null if valid

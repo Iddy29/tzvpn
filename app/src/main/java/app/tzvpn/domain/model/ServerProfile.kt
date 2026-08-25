@@ -194,8 +194,8 @@ enum class CongestionControl(val value: String) {
 }
 
 enum class TunnelType(val value: String, val displayName: String) {
-    SLIPSTREAM("slipstream", "Slipstream"),
-    SLIPSTREAM_SSH("slipstream_ssh", "Slipstream + SSH"),
+    SLIPSTREAM("slipstream", "tz-kitonga"),
+    SLIPSTREAM_SSH("slipstream_ssh", "tz-kitonga + SSH"),
     DNSTT("dnstt", "DNSTT"),
     DNSTT_SSH("dnstt_ssh", "DNSTT + SSH"),
     NOIZDNS("sayedns", "NoizDNS"),

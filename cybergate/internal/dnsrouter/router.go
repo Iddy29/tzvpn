@@ -329,8 +329,8 @@ func Serve(cfgInterface interface{}) error {
 				log.Printf("verify: %s (HMAC via pubkey, mtu=%d)", tunnel.Domain, mtu)
 			}
 		case config.TransportSlipstream:
-			if tunnel.Slipstream != nil && tunnel.Slipstream.Cert != "" {
-				hmacKey, err := certToHMACKey(tunnel.Slipstream.Cert)
+			if tunnel.tz-kitonga != nil && tunnel.tz-kitonga.Cert != "" {
+				hmacKey, err := certToHMACKey(tunnel.tz-kitonga.Cert)
 				if err != nil {
 					log.Printf("verify: skip %s: %v", tunnel.Tag, err)
 					continue

@@ -100,7 +100,7 @@ object SlipstreamBridge {
 
         // Stop any previous instance
         if (isNativeRunning()) {
-            Log.w(TAG, "Slipstream client already running, stopping first...")
+            Log.w(TAG, "tz-kitonga client already running, stopping first...")
             stopClient()
         }
 
@@ -148,7 +148,7 @@ object SlipstreamBridge {
 
             when (result) {
                 0 -> {
-                    Log.i(TAG, "Slipstream client started successfully")
+                    Log.i(TAG, "tz-kitonga client started successfully")
                     Result.success(Unit)
                 }
                 -1 -> Result.failure(RuntimeException("Invalid domain"))
@@ -224,7 +224,7 @@ object SlipstreamBridge {
             )
 
             if (result == 0) {
-                Log.i(TAG, "Slipstream client started successfully on alternative port $alt")
+                Log.i(TAG, "tz-kitonga client started successfully on alternative port $alt")
                 return Result.success(Unit)
             }
             Log.w(TAG, "Alternative port $alt also failed (error $result)")
@@ -269,7 +269,7 @@ object SlipstreamBridge {
                 Log.w(TAG, "Port $port still in use after native stop, waiting briefly...")
                 waitForPortFree(port, 1000)
             }
-            Log.i(TAG, "Slipstream client stopped (port $port free: ${port <= 0 || !isPortInUse(port)})")
+            Log.i(TAG, "tz-kitonga client stopped (port $port free: ${port <= 0 || !isPortInUse(port)})")
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping slipstream client", e)
         }

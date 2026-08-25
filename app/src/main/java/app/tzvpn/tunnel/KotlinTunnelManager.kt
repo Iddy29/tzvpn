@@ -974,11 +974,11 @@ class KotlinTunnelManager(
                 )
 
                 if (socket == null) {
-                    Log.e(TAG, "[${entry.streamId}] Slipstream connection failed")
-                    throw Exception("Slipstream connection failed")
+                    Log.e(TAG, "[${entry.streamId}] tz-kitonga connection failed")
+                    throw Exception("tz-kitonga connection failed")
                 }
 
-                if (verboseLogging) Log.i(TAG, "[${entry.streamId}] Slipstream connected!")
+                if (verboseLogging) Log.i(TAG, "[${entry.streamId}] tz-kitonga connected!")
 
                 // Remove from pending and upgrade to full connection
                 pendingConnections.remove(entry.streamId)
@@ -1415,7 +1415,7 @@ class Socks5ConnectionPool(
 
     /**
      * Connect using SOCKS5 protocol to the local slipstream proxy.
-     * Slipstream then tunnels the traffic through DNS to the destination.
+     * tz-kitonga then tunnels the traffic through DNS to the destination.
      */
     private suspend fun connectViaSocks5(dstAddr: InetAddress, dstPort: Int, streamId: Long): Socket? {
         // Retry logic for DNS tunnel which can be slow under load

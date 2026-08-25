@@ -1258,7 +1258,7 @@ fun EditProfileScreen(
                                     uiState.isNoizdnsBased -> "NoizDNS tunnel domain"
                                     uiState.isVaydnsBased -> "VayDNS tunnel domain"
                                     uiState.isDnsttBased -> "DNSTT tunnel domain"
-                                    uiState.isSlipstreamBased -> "Slipstream tunnel domain"
+                                    uiState.isSlipstreamBased -> "tz-kitonga tunnel domain"
                                     uiState.isNaiveBased -> "Caddy server hostname"
                                     else -> "SSH server hostname or IP"
                                 }
@@ -2710,7 +2710,7 @@ fun EditProfileScreen(
                     }
                 }
 
-                // Slipstream-specific settings
+                // tz-kitonga-specific settings
                 if (uiState.isSlipstreamBased) {
                     // Keep-Alive Interval (hidden in authoritative mode — polling subsumes keep-alive)
                     if (!uiState.authoritativeMode) {
@@ -2791,7 +2791,7 @@ fun EditProfileScreen(
                     }
                 }
 
-                // Connection Method section (DNSTT & Slipstream only, not SSH-only)
+                // Connection Method section (DNSTT & tz-kitonga only, not SSH-only)
                 if (uiState.showConnectionMethod) {
                     Text(
                         text = "Connection Method",
@@ -2836,7 +2836,7 @@ fun EditProfileScreen(
                     }
                 }
 
-                // SOCKS5 Credentials (optional, when SOCKS selected for DNSTT/Slipstream)
+                // SOCKS5 Credentials (optional, when SOCKS selected for DNSTT/tz-kitonga)
                 if (uiState.showConnectionMethod && !uiState.useSsh && !uiState.isNaiveBased) {
                     Text(
                         text = "SOCKS5 Credentials (Optional)",
@@ -2875,7 +2875,7 @@ fun EditProfileScreen(
                     )
                 }
 
-                // SSH Credentials (SSH-only, or when SSH selected for DNSTT/Slipstream)
+                // SSH Credentials (SSH-only, or when SSH selected for DNSTT/tz-kitonga)
                 if (uiState.useSsh) {
                     Text(
                         text = "SSH Credentials",
@@ -2883,7 +2883,7 @@ fun EditProfileScreen(
                         modifier = Modifier.padding(top = 8.dp)
                     )
 
-                    // SSH Port (only for DNSTT+SSH / Slipstream+SSH / NAIVE_SSH, not SSH-only which has it near domain)
+                    // SSH Port (only for DNSTT+SSH / tz-kitonga+SSH / NAIVE_SSH, not SSH-only which has it near domain)
                     if (uiState.showConnectionMethod) {
                         OutlinedTextField(
                             value = uiState.sshPort,
