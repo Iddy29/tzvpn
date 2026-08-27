@@ -2,9 +2,7 @@ package com.vpntz.app.presentation.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vpntz.app.data.export.ConfigExporter
-import com.vpntz.app.data.export.ConfigImporter
-import com.vpntz.app.data.export.ImportResult
+import com.vpntz.app.config.ConfigGateway
 import com.vpntz.app.data.local.datastore.PreferencesDataStore
 import com.vpntz.app.domain.model.ChainValidation
 import com.vpntz.app.domain.model.ConnectionState
@@ -112,8 +110,8 @@ class MainViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val chainRepository: ChainRepository,
     private val resolverScannerRepository: ResolverScannerRepository,
-    private val configExporter: ConfigExporter,
-    private val configImporter: ConfigImporter,
+    private val configGateway: ConfigGateway,
+    
     private val preferencesDataStore: PreferencesDataStore
 ) : ViewModel() {
 
@@ -549,7 +547,7 @@ class MainViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(error = "Cannot export a locked profile")
             return
         }
-        val json = configExporter.exportSingleProfile(profile, hideResolvers)
+        val json = configGateway.exportSingleProfile(profile, hideResolvers)
         _uiState.value = _uiState.value.copy(exportedJson = json)
     }
 
@@ -561,7 +559,7 @@ class MainViewModel @Inject constructor(
         boundDeviceId: String = "",
         hideResolvers: Boolean = false
     ) {
-        val json = configExporter.exportSingleProfileLocked(
+        val json = configGateway.exportSingleProfileLocked(
             profile, password, expirationDate, allowSharing, boundDeviceId, hideResolvers
         )
         _uiState.value = _uiState.value.copy(exportedJson = json)
@@ -573,7 +571,7 @@ class MainViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(error = "No exportable profiles")
             return
         }
-        val json = configExporter.exportAllProfiles(profiles)
+        val json = configGateway.exportAllProfiles(profiles)
         _uiState.value = _uiState.value.copy(exportedJson = json)
     }
 
@@ -591,7 +589,7 @@ class MainViewModel @Inject constructor(
             return
         }
         try {
-            val encrypted = configExporter.exportAllProfilesEncrypted(
+            val encrypted = configGateway.exportAllProfilesEncrypted(
                 profiles,
                 bundlePassword,
                 profilePassword,
@@ -611,20 +609,20 @@ class MainViewModel @Inject constructor(
     }
 
     fun parseImportConfig(json: String, bundlePassword: String? = null) {
-        val result = configImporter.parseAndImport(
+        val result = configGateway.parseAndImport(
             json, connectionManager.getDeviceId(), bundlePassword
         )
         when (result) {
-            is ImportResult.Success -> {
+            is ConfigGateway.ImportResult.Success -> {
                 _uiState.value = _uiState.value.copy(
                     importPreview = ImportPreview(result.profiles, result.warnings),
                     pendingEncryptedImport = null
                 )
             }
-            is ImportResult.Error -> {
+            is ConfigGateway.ImportResult.Error -> {
                 _uiState.value = _uiState.value.copy(error = result.message)
             }
-            ImportResult.NeedsPassword -> {
+            ConfigGateway.ImportResult.NeedsPassword -> {
                 _uiState.value = _uiState.value.copy(pendingEncryptedImport = json)
             }
         }
@@ -663,7 +661,7 @@ class MainViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(error = "Cannot export a locked profile")
             return
         }
-        val configUri = configExporter.exportSingleProfile(profile, hideResolvers)
+        val configUri = configGateway.exportSingleProfile(profile, hideResolvers)
         _uiState.value = _uiState.value.copy(
             qrCodeData = QrCodeData(profile.name, configUri)
         )
@@ -681,7 +679,7 @@ class MainViewModel @Inject constructor(
         boundDeviceId: String = "",
         hideResolvers: Boolean = false
     ) {
-        val configUri = configExporter.exportSingleProfileLocked(
+        val configUri = configGateway.exportSingleProfileLocked(
             profile, password, expirationDate, allowSharing, boundDeviceId, hideResolvers
         )
         _uiState.value = _uiState.value.copy(
@@ -691,7 +689,7 @@ class MainViewModel @Inject constructor(
 
     fun reExportLockedProfile(profile: ServerProfile) {
         try {
-            val json = configExporter.reExportLockedProfile(profile)
+            val json = configGateway.reExportLockedProfile(profile)
             _uiState.value = _uiState.value.copy(exportedJson = json)
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(error = e.message ?: "Re-export failed")
@@ -700,7 +698,7 @@ class MainViewModel @Inject constructor(
 
     fun showQrCodeLockedReExport(profile: ServerProfile) {
         try {
-            val configUri = configExporter.reExportLockedProfile(profile)
+            val configUri = configGateway.reExportLockedProfile(profile)
             _uiState.value = _uiState.value.copy(
                 qrCodeData = QrCodeData(profile.name, configUri)
             )

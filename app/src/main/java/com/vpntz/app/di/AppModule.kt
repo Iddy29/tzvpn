@@ -3,6 +3,9 @@ package com.vpntz.app.di
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.vpntz.app.config.ConfigGateway
+import com.vpntz.app.config.DeviceKeyCipher
+import com.vpntz.app.util.LockPasswordUtil
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,4 +50,20 @@ object AppModule {
     @Provides
     @DefaultDispatcher
     fun provideDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
+
+    /**
+     * Phase-1 bridge: device-key cipher port backed by the existing native
+     * accessor. Key material never leaves the native boundary in plaintext.
+     */
+    @Provides
+    @Singleton
+    fun provideDeviceKeyCipher(): DeviceKeyCipher = DeviceKeyCipher.of(
+        onEncrypt = { LockPasswordUtil.encryptConfig(it) },
+        onDecrypt = { LockPasswordUtil.decryptConfig(it) }
+    )
+
+    @Provides
+    @Singleton
+    fun provideConfigGateway(cipher: DeviceKeyCipher): ConfigGateway =
+        ConfigGateway(deviceKeyCipher = cipher)
 }
