@@ -41,11 +41,11 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Current entry point: `VpnRepositoryImpl.startDnsttProxy` → `DnsttBridge.startClient`
 - Current caller: `VpnTzService.connectDnstt` (~L1647)
 - Legacy dependency: profile → config mapping in `VpnRepositoryImpl`; orchestration in `VpnTzService`
-- Required new adapter: `DnsttTunnelAdapter` implementing a uniform lifecycle contract
+- Adapter: `DnsttTunnelAdapter` (alias of the bound `TunnelAdapter`), backend wired as `BridgeTunnelLifecycleBackend` in `com.vpntz.app.tunnel.adapter`
 - Configuration mapping: `ServerProfile` (domain, public key, noiz/stealth flags, resolver mode, RR spread, SOCKS5 proxy chain) + prefs (ports, host, DNS worker pool)
 - Start: `startClient(...)`; Stop: `stopClient`/`stopClientBlocking`; Ready: `isClientHealthy`; Cleanup: `stopClient` + `DnsttBridge.setVpnService(null)`
-- Tests: none (existing coverage is device smoke, not JVM)
-- Migration status: **not migrated**
+- Tests: none (existing coverage is device smoke, not JVM); `DnsttBridgeArgs` JVM-tested for config→args
+- Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startDnsttProxy` now builds a `TunnelAdapterConfig.Dnstt` via `TunnelConfigMapper` (runtime DNS-address/auto-tune copied in) and calls `tunnelAdapter.start(config)`, which delegates to `DnsttBridge.startClient` through `BridgeTunnelLifecycleBackend`. `VpnTzService.connectDnstt` orchestration is unchanged. NoizDNS (`startNoizdnsProxy`) still calls the bridge directly and can reuse this backend next.
 
 ### noizdns
 - Android adapter: `DnsttBridge` (invoked with `noizMode=true`, `setDeviceManufacturer`, optional `setStealthMode`) + `DnsttSocksBridge`

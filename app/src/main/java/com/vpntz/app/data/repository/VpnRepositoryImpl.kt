@@ -15,6 +15,11 @@ import com.vpntz.app.tunnel.DnsDoHProxy
 import com.vpntz.app.tunnel.DnsPoolScanState
 import com.vpntz.app.tunnel.DnsPoolScanner
 import com.vpntz.app.tunnel.DnsttBridge
+import com.vpntz.app.tunnel.adapter.BridgeTunnelLifecycleBackend
+import com.vpntz.app.tunnel.adapter.TunnelAdapterConfig
+import com.vpntz.app.tunnel.adapter.TunnelConfigMapper
+import com.vpntz.app.tunnel.adapter.TunnelLifecycleBackend
+import com.vpntz.app.tunnel.adapter.TunnelRuntimeDefaults
 import com.vpntz.app.tunnel.Hysteria2Bridge
 import com.vpntz.app.tunnel.VlessRealityBridge
 import com.vpntz.app.tunnel.VaydnsBridge
@@ -55,6 +60,13 @@ class VpnRepositoryImpl @Inject constructor(
     private val resolverScanner: ResolverScannerRepository,
     private val profileRepository: com.vpntz.app.domain.repository.ProfileRepository
 ) : VpnRepository {
+    // Adapter seam for the tunnel proxy-start step. The static profile→config
+    // translation is owned by TunnelConfigMapper; runtime work (DNS pool scan,
+    // transport-aware DNS formatting, connect-time auto-tune) stays here and is
+    // fed into the config before the backend starts the bridge.
+    private val tunnelConfigMapper = TunnelConfigMapper()
+    private val tunnelAdapter: TunnelLifecycleBackend = BridgeTunnelLifecycleBackend()
+
     companion object {
         private const val TAG = "VpnRepositoryImpl"
 
@@ -349,20 +361,20 @@ class VpnRepositoryImpl @Inject constructor(
             r.maxPayload
         } else profile.dnsPayloadSize
 
-        val result = DnsttBridge.startClient(
+        val adapterConfig = buildDnsttConfig(
+            profile = profile,
             dnsServer = dnsServer,
-            tunnelDomain = profile.domain,
-            publicKey = profile.dnsttPublicKey,
-            listenPort = proxyPort,
-            listenHost = proxyHost,
-            authoritativeMode = profile.dnsttAuthoritative,
-            maxPayload = tunedPayload,
+            tunedPayload = tunedPayload,
+            proxyPort = proxyPort,
+            proxyHost = proxyHost,
+            effectiveResolvers = effectiveOverride,
+            noizdns = false,
+            noizStealth = profile.noizdnsStealth,
             socksProxyAddr = socksProxyAddr,
             socksProxyUser = socksProxyUser,
-            socksProxyPass = socksProxyPass,
-            resolverMode = profile.resolverMode.value,
-            rrSpreadCount = profile.rrSpreadCount
+            socksProxyPass = socksProxyPass
         )
+        val result = tunnelAdapter.start(adapterConfig)
 
         if (result.isSuccess) {
             Log.i(TAG, "DNSTT SOCKS5 proxy started successfully")
@@ -374,6 +386,45 @@ class VpnRepositoryImpl @Inject constructor(
             Log.e(TAG, "Failed to start DNSTT proxy: $error")
             Result.failure(Exception(error))
         }
+    }
+
+    /**
+     * Build the [TunnelAdapterConfig.Dnstt] for [tunnelAdapter]. Static fields
+     * come from [TunnelConfigMapper]; the transport-aware DNS address and the
+     * auto-tuned payload are runtime values computed by [startDnsttProxy] and
+     * copied in here so the mapper stays pure.
+     */
+    private fun buildDnsttConfig(
+        profile: ServerProfile,
+        dnsServer: String,
+        tunedPayload: Int,
+        proxyPort: Int,
+        proxyHost: String,
+        effectiveResolvers: List<DnsResolver>?,
+        noizdns: Boolean,
+        noizStealth: Boolean,
+        socksProxyAddr: String?,
+        socksProxyUser: String?,
+        socksProxyPass: String?
+    ): TunnelAdapterConfig.Dnstt {
+        val base = tunnelConfigMapper.map(
+            TunnelType.DNSTT,
+            profile,
+            TunnelRuntimeDefaults(
+                listenPort = proxyPort,
+                listenHost = proxyHost,
+                resolvers = effectiveResolvers ?: emptyList()
+            )
+        ) as TunnelAdapterConfig.Dnstt
+        return base.copy(
+            effectiveDnsServer = dnsServer,
+            maxPayload = tunedPayload,
+            noizdns = noizdns,
+            noizStealth = noizStealth,
+            socksProxyAddr = socksProxyAddr,
+            socksProxyUser = socksProxyUser,
+            socksProxyPass = socksProxyPass
+        )
     }
 
     /**

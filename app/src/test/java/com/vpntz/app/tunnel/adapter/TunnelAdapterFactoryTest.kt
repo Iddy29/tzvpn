@@ -79,6 +79,7 @@ class TunnelAdapterFactoryTest {
         val adapter = factory.create(TunnelType.DNSTT, backend)
         val result = adapter.start(TunnelAdapterConfig.Dnstt(
             domain = "d", publicKey = "k", authoritative = false, resolvers = emptyList(),
+            effectiveDnsServer = "8.8.8.8:53",
             listenPort = 1080, listenHost = "127.0.0.1", maxPayload = 0, resolverMode = "fanout",
             rrSpreadCount = 3, noizdns = false, noizStealth = false,
             socksProxyAddr = null, socksProxyUser = null, socksProxyPass = null
@@ -105,6 +106,7 @@ class TunnelAdapterFactoryTest {
         val adapter = factory.create(TunnelType.DNSTT, backend)
         adapter.start(TunnelAdapterConfig.Dnstt(
             domain = "d", publicKey = "k", authoritative = false, resolvers = emptyList(),
+            effectiveDnsServer = "8.8.8.8:53",
             listenPort = 1080, listenHost = "127.0.0.1", maxPayload = 0, resolverMode = "fanout",
             rrSpreadCount = 3, noizdns = false, noizStealth = false,
             socksProxyAddr = null, socksProxyUser = null, socksProxyPass = null

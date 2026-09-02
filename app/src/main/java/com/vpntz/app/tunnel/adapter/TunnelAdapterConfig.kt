@@ -21,6 +21,7 @@ sealed class TunnelAdapterConfig {
         val publicKey: String,
         val authoritative: Boolean,
         val resolvers: List<DnsResolver>,
+        val effectiveDnsServer: String,
         val listenPort: Int,
         val listenHost: String,
         val maxPayload: Int,
@@ -174,11 +175,15 @@ class TunnelConfigMapper {
     private fun dnstt(profile: ServerProfile, runtime: TunnelRuntimeDefaults, noizdns: Boolean): TunnelAdapterConfig.Dnstt {
         require(profile.domain.isNotBlank()) { "DNSTT tunnel domain is required" }
         require(profile.dnsttPublicKey.isNotBlank()) { "DNSTT public key is required" }
+        val resolvers = runtime.resolvers.ifEmpty { profile.resolvers }
         return TunnelAdapterConfig.Dnstt(
             domain = profile.domain,
             publicKey = profile.dnsttPublicKey,
             authoritative = profile.dnsttAuthoritative,
-            resolvers = runtime.resolvers.ifEmpty { profile.resolvers },
+            resolvers = resolvers,
+            // Leaf default (UDP host:port). The runtime layer replaces this with
+            // the transport-aware formatted address (DoH/DoT/TCP + preflight).
+            effectiveDnsServer = resolvers.joinToString(",") { "${it.host}:${it.port}" }.ifBlank { "8.8.8.8:53" },
             listenPort = runtime.listenPort,
             listenHost = runtime.listenHost,
             maxPayload = profile.dnsPayloadSize,
