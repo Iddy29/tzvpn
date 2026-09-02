@@ -56,7 +56,7 @@ class TunnelAdapterFactoryTest {
         val cfg = TunnelAdapterConfig.Vless(
             host = "h", port = 443, uuid = "u", security = "tls", transport = "ws", wsPath = "/",
             sni = "", cdnIp = "", cdnPort = 443, sniFragmentEnabled = true, sniFragmentStrategy = "micro",
-            sniFragmentDelayMs = 300, fakeDecoyHost = "", tcpMaxSeg = 0, chPaddingEnabled = false,
+            sniFragmentDelayMs = 300, sniSpoofTtl = 8, fakeDecoyHost = "", tcpMaxSeg = 0, chPaddingEnabled = false,
             wsHeaderObfuscation = true, wsPaddingEnabled = false, realityPubKey = "", realityShortId = "",
             realityFp = "chrome", listenPort = 1080, listenHost = "127.0.0.1"
         )

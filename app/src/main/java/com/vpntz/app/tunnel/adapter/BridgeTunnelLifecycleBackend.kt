@@ -5,6 +5,8 @@ import com.vpntz.app.tunnel.DnsttBridge
 import com.vpntz.app.tunnel.NaiveBridge
 import com.vpntz.app.tunnel.SlipstreamBridge
 import com.vpntz.app.tunnel.VaydnsBridge
+import com.vpntz.app.tunnel.VlessBridge
+import com.vpntz.app.tunnel.VlessRealityBridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -34,6 +36,7 @@ class BridgeTunnelLifecycleBackend(
             is TunnelAdapterConfig.Vaydns -> startVaydns(config)
             is TunnelAdapterConfig.Slipstream -> startSlipstream(config)
             is TunnelAdapterConfig.Naive -> startNaive(config)
+            is TunnelAdapterConfig.Vless -> startVless(config)
             else -> Result.failure(UnsupportedOperationException(
                 "No bridge backend wired for ${config::class.simpleName}"
             ))
@@ -122,34 +125,81 @@ class BridgeTunnelLifecycleBackend(
             }
         }
 
+    private suspend fun startVless(config: TunnelAdapterConfig.Vless): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            if (VlessBridgeArgs.isReality(config)) {
+                val a = VlessBridgeArgs.resolveReality(config)
+                VlessRealityBridge.start(
+                    listenPort = a.listenPort,
+                    listenHost = a.listenHost,
+                    serverHost = a.serverHost,
+                    serverPort = a.serverPort,
+                    uuid = a.uuid,
+                    sni = a.sni,
+                    publicKey = a.publicKey,
+                    shortId = a.shortId,
+                    fingerprint = a.fingerprint
+                )
+            } else {
+                val a = VlessBridgeArgs.resolveCdn(config)
+                VlessBridge.start(
+                    listenPort = a.listenPort,
+                    listenHost = a.listenHost,
+                    cdnIp = a.cdnIp,
+                    cdnPort = a.cdnPort,
+                    serverDomain = a.serverDomain,
+                    vlessUuid = a.vlessUuid,
+                    security = a.security,
+                    transport = a.transport,
+                    wsPath = a.wsPath,
+                    fragmentEnabled = a.fragmentEnabled,
+                    fragmentStrategy = a.fragmentStrategy,
+                    fragmentDelayMs = a.fragmentDelayMs,
+                    sniSpoofTtl = a.sniSpoofTtl,
+                    fakeDecoyHost = a.fakeDecoyHost,
+                    tcpMaxSeg = a.tcpMaxSeg,
+                    vlessSni = a.vlessSni,
+                    chPaddingEnabled = a.chPaddingEnabled,
+                    wsHeaderObfuscation = a.wsHeaderObfuscation,
+                    wsPaddingEnabled = a.wsPaddingEnabled
+                )
+            }
+        }
+
+    private fun isReality(config: TunnelAdapterConfig): Boolean =
+        (config as? TunnelAdapterConfig.Vless)?.let { VlessBridgeArgs.isReality(it) } == true
+
     override fun stop() {
-        when (active) {
+        when (val c = active) {
             is TunnelAdapterConfig.Vaydns -> VaydnsBridge.stopClient()
             is TunnelAdapterConfig.Dnstt -> DnsttBridge.stopClient()
             is TunnelAdapterConfig.Slipstream -> SlipstreamBridge.stopClient()
             is TunnelAdapterConfig.Naive -> NaiveBridge.stop()
+            is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.stop() else VlessBridge.stop()
             else -> Unit
         }
     }
 
-    override fun isRunning(): Boolean = when (active) {
+    override fun isRunning(): Boolean = when (val c = active) {
         is TunnelAdapterConfig.Vaydns -> VaydnsBridge.isRunning()
         is TunnelAdapterConfig.Dnstt -> DnsttBridge.isRunning()
         is TunnelAdapterConfig.Slipstream -> SlipstreamBridge.isNativeRunning()
         is TunnelAdapterConfig.Naive -> NaiveBridge.isRunning()
+        is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.isRunning() else VlessBridge.isRunning()
         else -> false
     }
 
-    override fun isHealthy(): Boolean = when (active) {
+    override fun isHealthy(): Boolean = when (val c = active) {
         is TunnelAdapterConfig.Vaydns -> VaydnsBridge.isClientHealthy()
         is TunnelAdapterConfig.Dnstt -> DnsttBridge.isClientHealthy()
         is TunnelAdapterConfig.Slipstream -> SlipstreamBridge.isClientHealthy()
         is TunnelAdapterConfig.Naive -> NaiveBridge.isClientHealthy()
+        is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.isClientHealthy() else VlessBridge.isClientHealthy()
         else -> false
     }
 
     override fun cleanup() {
-        when (active) {
+        when (val c = active) {
             is TunnelAdapterConfig.Vaydns -> {
                 VaydnsBridge.stopClient()
             }
@@ -164,6 +214,7 @@ class BridgeTunnelLifecycleBackend(
             is TunnelAdapterConfig.Naive -> {
                 NaiveBridge.stop()
             }
+            is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.stop() else VlessBridge.stop()
             else -> Unit
         }
     }

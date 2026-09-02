@@ -77,10 +77,11 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Migration status: **adapter wired; service wiring pending; device verification pending** — the `TunnelAdapterConfig.Naive` + `TunnelConfigMapper` + `NaiveBridgeArgs` + backend branch exist and are JVM-tested, but the **VpnTzService](chain-engine) Naive start was NOT rewired** to the adapter (it lives in the service and is left intact pending device verification). Runtime host-name pre-resolution and SOCKS-bridge setup remain in the existing code.
 
 ### vless
-- Android adapter: `VlessBridge` (+ `VlessRealityBridge`)
-- Native: gomobile `golibs-full.aar` (Xray-core adaptation)
-- Entry point: `VlessBridge.start`; caller: `VpnTzService.connectVless` (~L3047)
-- Migration status: **not migrated**
+- Android adapter: `VlessBridge` (CDN/WebSocket/TLS, pure-Kotlin VLESS protocol + SNI fragmentation) and `VlessRealityBridge` (xtls REALITY, gomobile)
+- Native: `VlessBridge` — none (pure Kotlin sockets); `VlessRealityBridge` — gomobile `golibs-full.aar` (`vlessreality-mobile/vlessreality`)
+- Entry point: `VpnTzService.connectVless` (~L3047) calls `VlessBridge.start(...)`; `connectVlessReality` (~L3202) calls `VlessRealityBridge.start(...)` — both inside the service's chain engine.
+- Adapter: added `TunnelAdapterConfig.Vless` (fields + `sniSpoofTtl`), `VlessBridgeArgs` (pure config→args for both CDN and Reality, selected by `security == "reality"`), a `TunnelAdapterConfig.Vless` branch in `BridgeTunnelLifecycleBackend` (`startVless` → `VlessBridge` or `VlessRealityBridge`).
+- Migration status: **adapter wired; service wiring pending; device verification pending** — the config/args/backend exist and are JVM-tested, but the **`VpnTzService` VLESS start was NOT rewired** to the adapter (it lives in the service chain engine and is left intact pending device verification). The gomobile AAR (`golibs-full.aar`) for the reality path is prebuilt (not rebuilt here).
 
 ### tor
 - Android adapter: `TorSocksBridge`
