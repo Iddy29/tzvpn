@@ -9,6 +9,7 @@ import com.vpntz.app.tunnel.VaydnsBridge
 import com.vpntz.app.tunnel.VlessBridge
 import com.vpntz.app.tunnel.VlessRealityBridge
 import com.vpntz.app.tunnel.SshTunnelBridge
+import com.vpntz.app.tunnel.DohBridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -41,6 +42,7 @@ class BridgeTunnelLifecycleBackend(
             is TunnelAdapterConfig.Vless -> startVless(config)
             is TunnelAdapterConfig.Snowflake -> startSnowflake(config)
             is TunnelAdapterConfig.Ssh -> startSsh(config)
+            is TunnelAdapterConfig.Doh -> startDoh(config)
             else -> Result.failure(UnsupportedOperationException(
                 "No bridge backend wired for ${config::class.simpleName}"
             ))
@@ -229,6 +231,19 @@ class BridgeTunnelLifecycleBackend(
             }
         }
 
+    private suspend fun startDoh(config: TunnelAdapterConfig.Doh): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val a = DohBridgeArgs.resolve(config)
+            DohBridge.start(
+                dohUrl = a.dohUrl,
+                listenPort = a.listenPort,
+                listenHost = a.listenHost,
+                localAuthUsername = a.localAuthUsername,
+                localAuthPassword = a.localAuthPassword,
+                upstreamSocksAddr = a.upstreamSocksAddr
+            )
+        }
+
     override fun stop() {
         when (val c = active) {
             is TunnelAdapterConfig.Vaydns -> VaydnsBridge.stopClient()
@@ -238,6 +253,7 @@ class BridgeTunnelLifecycleBackend(
             is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.stop() else VlessBridge.stop()
             is TunnelAdapterConfig.Snowflake -> SnowflakeBridge.stopClient()
             is TunnelAdapterConfig.Ssh -> SshTunnelBridge.stop()
+            is TunnelAdapterConfig.Doh -> DohBridge.stop()
             else -> Unit
         }
     }
@@ -250,6 +266,7 @@ class BridgeTunnelLifecycleBackend(
         is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.isRunning() else VlessBridge.isRunning()
         is TunnelAdapterConfig.Snowflake -> SnowflakeBridge.isRunning()
         is TunnelAdapterConfig.Ssh -> SshTunnelBridge.isRunning()
+        is TunnelAdapterConfig.Doh -> DohBridge.isRunning()
         else -> false
     }
 
@@ -261,6 +278,7 @@ class BridgeTunnelLifecycleBackend(
         is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.isClientHealthy() else VlessBridge.isClientHealthy()
         is TunnelAdapterConfig.Snowflake -> SnowflakeBridge.isClientHealthy()
         is TunnelAdapterConfig.Ssh -> SshTunnelBridge.isClientHealthy()
+        is TunnelAdapterConfig.Doh -> DohBridge.isClientHealthy()
         else -> false
     }
 
@@ -286,6 +304,9 @@ class BridgeTunnelLifecycleBackend(
             }
             is TunnelAdapterConfig.Ssh -> {
                 SshTunnelBridge.stop()
+            }
+            is TunnelAdapterConfig.Doh -> {
+                DohBridge.stop()
             }
             else -> Unit
         }

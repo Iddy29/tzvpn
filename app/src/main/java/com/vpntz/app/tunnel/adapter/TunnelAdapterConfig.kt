@@ -135,7 +135,10 @@ sealed class TunnelAdapterConfig {
     data class Doh(
         val url: String,
         val listenPort: Int,
-        val listenHost: String
+        val listenHost: String,
+        val localAuthUsername: String? = null,
+        val localAuthPassword: String? = null,
+        val upstreamSocksAddr: java.net.InetSocketAddress? = null
     ) : TunnelAdapterConfig()
 
     data class Hysteria2(
@@ -341,10 +344,10 @@ class TunnelConfigMapper {
     }
 
     private fun doh(profile: ServerProfile, runtime: TunnelRuntimeDefaults, needValidUrl: Boolean): TunnelAdapterConfig.Doh {
-        if (needValidUrl) require(profile.domain.isNotBlank()) { "DoH server host is required" }
+        if (needValidUrl) require(profile.dohUrl.isNotBlank()) { "DoH endpoint URL is required" }
         require(profile.tunnelType == TunnelType.DOH) { "DoH config requested for ${profile.tunnelType}" }
         return TunnelAdapterConfig.Doh(
-            url = profile.domain,
+            url = profile.dohUrl,
             listenPort = runtime.listenPort,
             listenHost = runtime.listenHost
         )

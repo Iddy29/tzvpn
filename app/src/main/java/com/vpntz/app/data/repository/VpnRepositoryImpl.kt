@@ -815,14 +815,15 @@ class VpnRepositoryImpl @Inject constructor(
         val localAuthUser = if (preferencesDataStore.proxyAuthEnabled.first()) preferencesDataStore.proxyAuthUsername.first().ifEmpty { null } else null
         val localAuthPass = if (preferencesDataStore.proxyAuthEnabled.first()) preferencesDataStore.proxyAuthPassword.first().ifEmpty { null } else null
 
-        val result = DohBridge.start(
-            dohUrl = profile.dohUrl,
-            listenPort = proxyPort,
-            listenHost = proxyHost,
-            localAuthUsername = localAuthUser,
-            localAuthPassword = localAuthPass,
+        val adapterConfig = buildDohConfig(
+            profile = profile,
+            proxyPort = proxyPort,
+            proxyHost = proxyHost,
+            localAuthUser = localAuthUser,
+            localAuthPass = localAuthPass,
             upstreamSocksAddr = upstreamSocksAddr
         )
+        val result = tunnelAdapter.start(adapterConfig)
 
         if (result.isSuccess) {
             Log.i(TAG, "DoH SOCKS5 proxy started successfully")
@@ -834,6 +835,30 @@ class VpnRepositoryImpl @Inject constructor(
             Log.e(TAG, "Failed to start DoH proxy: $error")
             Result.failure(Exception(error))
         }
+    }
+
+    /**
+     * Build the [TunnelAdapterConfig.Doh] for [tunnelAdapter]. The endpoint URL
+     * and listen address come from [TunnelConfigMapper]; the local SOCKS auth and
+     * optional upstream SOCKS address are runtime values supplied here.
+     */
+    private fun buildDohConfig(
+        profile: ServerProfile,
+        proxyPort: Int,
+        proxyHost: String,
+        localAuthUser: String?,
+        localAuthPass: String?,
+        upstreamSocksAddr: java.net.InetSocketAddress?
+    ): TunnelAdapterConfig.Doh = tunnelConfigMapper.map(
+        TunnelType.DOH,
+        profile,
+        TunnelRuntimeDefaults(listenPort = proxyPort, listenHost = proxyHost)
+    ).let { base ->
+        (base as TunnelAdapterConfig.Doh).copy(
+            localAuthUsername = localAuthUser,
+            localAuthPassword = localAuthPass,
+            upstreamSocksAddr = upstreamSocksAddr
+        )
     }
 
     /**

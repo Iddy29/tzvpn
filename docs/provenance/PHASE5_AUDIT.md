@@ -100,9 +100,10 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 
 ### doh
 - Android adapter: `DohBridge`
-- Native: gomobile `golibs-full.aar` (Go DoH, uTLS)
-- Entry point: `VpnRepositoryImpl.startDohProxy`; caller: `VpnTzService.connectDoh`
-- Migration status: **not migrated**
+- Native: none (OkHttp, pure JVM)
+- Entry point: `VpnRepositoryImpl.startDohProxy` → `DohBridge.start(...)`; caller: `VpnTzService.connectDoh`
+- Adapter: added `TunnelAdapterConfig.Doh` fields (localAuthUsername, localAuthPassword, upstreamSocksAddr) + `DohBridgeArgs` (pure config→args), a `TunnelAdapterConfig.Doh` branch in `BridgeTunnelLifecycleBackend` (`startDoh` → `DohBridge.start`).
+- Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startDohProxy` now builds a `TunnelAdapterConfig.Doh` (endpoint URL + listen from `TunnelConfigMapper`; local SOCKS auth + upstream SOCKS copied in) and calls `tunnelAdapter.start(config)` → `BridgeTunnelLifecycleBackend` → `DohBridge.start`. `VpnTzService.connectDoh` orchestration unchanged. Native artifact: none (OkHttp); TLS/cert validation is owned by `DohBridge` and is device/network verified.
 
 ### hysteria2 / snowflake (extra, discovered)
 - Android adapters: `Hysteria2Bridge`, `TorSocksBridge`/snowflake

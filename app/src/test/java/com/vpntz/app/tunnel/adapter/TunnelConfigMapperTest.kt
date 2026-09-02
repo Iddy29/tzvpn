@@ -101,10 +101,13 @@ class TunnelConfigMapperTest {
     }
 
     @Test
-    fun `doh maps url host`() {
-        val p = profile(TunnelType.DOH, domain = "d.example.com")
+    fun `doh maps the endpoint url and rejects blank`() {
+        val p = profile(TunnelType.DOH, domain = "d.example.com").copy(dohUrl = "https://dns.example.com/dns-query")
         val cfg = mapper.map(TunnelType.DOH, p, runtime) as TunnelAdapterConfig.Doh
-        assertEquals("d.example.com", cfg.url)
+        assertEquals("https://dns.example.com/dns-query", cfg.url)
+        assertThrows(IllegalArgumentException::class.java) {
+            mapper.map(TunnelType.DOH, profile(TunnelType.DOH, domain = "d.example.com"), runtime)
+        }
     }
 
     @Test
