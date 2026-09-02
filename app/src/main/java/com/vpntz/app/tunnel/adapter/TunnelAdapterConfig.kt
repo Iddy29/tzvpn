@@ -115,6 +115,11 @@ sealed class TunnelAdapterConfig {
         val password: String,
         val privateKey: String,
         val keyPassphrase: String,
+        val listenPort: Int,
+        val listenHost: String,
+        val forwardDnsThroughSsh: Boolean,
+        val remoteDnsHost: String,
+        val remoteDnsFallback: String,
         val payload: String,
         val tlsEnabled: Boolean,
         val tlsSni: String,
@@ -123,7 +128,8 @@ sealed class TunnelAdapterConfig {
         val wsEnabled: Boolean,
         val wsPath: String,
         val wsUseTls: Boolean,
-        val wsCustomHost: String
+        val wsCustomHost: String,
+        val wsTlsSni: String
     ) : TunnelAdapterConfig()
 
     data class Doh(
@@ -316,6 +322,11 @@ class TunnelConfigMapper {
             password = profile.sshPassword,
             privateKey = profile.sshPrivateKey,
             keyPassphrase = profile.sshKeyPassphrase,
+            listenPort = runtime.listenPort,
+            listenHost = runtime.listenHost,
+            forwardDnsThroughSsh = false,
+            remoteDnsHost = "8.8.8.8",
+            remoteDnsFallback = "1.1.1.1",
             payload = profile.sshPayload,
             tlsEnabled = profile.sshTlsEnabled,
             tlsSni = profile.sshTlsSni,
@@ -324,7 +335,8 @@ class TunnelConfigMapper {
             wsEnabled = profile.sshWsEnabled,
             wsPath = profile.sshWsPath,
             wsUseTls = profile.sshWsUseTls,
-            wsCustomHost = profile.sshWsCustomHost
+            wsCustomHost = profile.sshWsCustomHost,
+            wsTlsSni = ""
         )
     }
 

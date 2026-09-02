@@ -94,6 +94,10 @@ class TunnelConfigMapperTest {
         assertEquals("PEM", cfg.privateKey)
         assertTrue(cfg.tlsEnabled)
         assertTrue(cfg.wsEnabled)
+        assertEquals(1080, cfg.listenPort) // from runtime
+        assertThrows(IllegalArgumentException::class.java) {
+            mapper.map(TunnelType.SSH, profile(TunnelType.SSH, domain = ""), runtime)
+        }
     }
 
     @Test

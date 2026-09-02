@@ -92,11 +92,11 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startSnowflakeProxy` now routes the `SnowflakeBridge.startClient` step through `tunnelAdapter.start(snowflakeConfig)` (TorSocksBridge + the rest of the stack unchanged). This status covers the Tor+Snowflake/obfs4 layer as wired to the adapter; device verification pending for the Tor/Snowflake/obfs4/native path.
 
 ### ssh
-- Android adapter: `SshTunnelBridge` + `SshTunnelInstance`
+- Android adapter: `SshTunnelBridge` + `SshTunnelInstance` (JSch)
 - Native: pure-Java JSch (no native binary)
-- Entry point: `startSsh…` in `VpnTzService` (via `configureSshBridge`/`configureSshInstance`)
-- Callers: `connectSsh`, `connectDnsttSsh`, `connectNaiveSsh`, `connectVaydnsSsh`
-- Migration status: **not migrated**
+- Entry point: `SshTunnelBridge.startDirect/startOverHttpProxy/startOverWebSocket` — called from `VpnTzService`'s `connectSsh` family (via `configureSshBridge`/`configureSshInstance`, inside the service's chain engine).
+- Adapter: added `TunnelAdapterConfig.Ssh` fields (listenPort, listenHost, forwardDnsThroughSsh, remoteDnsHost, remoteDnsFallback, wsTlsSni) + `SshBridgeArgs` (pure config→args with transport selection: DIRECT / HTTP_PROXY / WEB_SOCKET based on `wsEnabled`/`httpProxyHost`), a `TunnelAdapterConfig.Ssh` branch in `BridgeTunnelLifecycleBackend` (`startSsh` → the matching `SshTunnelBridge.start*`).
+- Migration status: **adapter wired; service wiring pending; device verification pending** — the config/args/backend exist and are JVM-tested, but the **`VpnTzService` SSH start was NOT rewired** to the adapter (it lives in the service chain engine and is left intact pending device verification). Native artifact: none (JSch).
 
 ### doh
 - Android adapter: `DohBridge`
