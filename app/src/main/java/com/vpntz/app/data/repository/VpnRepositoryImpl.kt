@@ -290,33 +290,58 @@ class VpnRepositoryImpl @Inject constructor(
         connectedProfile = profile
         val debugLogging = preferencesDataStore.debugLogging.first()
 
-        // Convert profile (or global override) to resolver config.
-        // Deduplicate by host:port to avoid "Duplicate resolver address" from native code.
+        // Convert profile (or global override) to resolver config (dedup by host:port).
         val effectiveResolvers = resolverOverride ?: profile.resolvers
-        val resolvers = effectiveResolvers.map { resolver ->
-            ResolverConfig(
-                host = resolver.host,
-                port = resolver.port,
-                authoritative = resolver.authoritative
-            )
-        }.distinctBy { "${it.host}:${it.port}" }
 
         val listenPort = portOverride ?: preferencesDataStore.proxyListenPort.first()
         val listenHost = hostOverride ?: preferencesDataStore.proxyListenAddress.first()
-        val success = startSlipstreamClient(profile.domain, resolvers, profile, debugLogging, listenPort, listenHost)
 
-        if (success) {
+        val adapterConfig = buildSlipstreamConfig(
+            profile = profile,
+            debugLogging = debugLogging,
+            listenPort = listenPort,
+            listenHost = listenHost,
+            resolvers = effectiveResolvers
+        )
+        val result = tunnelAdapter.start(adapterConfig)
+
+        if (result.isSuccess) {
             Log.i(TAG, "tz-kitonga SOCKS5 proxy started successfully")
             currentTunnelType = TunnelType.SLIPSTREAM
             // Note: Caller should verify proxy is ready by checking the port
             Result.success(Unit)
         } else {
+            val cause = result.exceptionOrNull()
+            tunnelStartException = Exception("DNS tunnel failed: ${cause?.message ?: "Unknown error"}", cause)
             val error = tunnelStartException?.message ?: "Failed to start tz-kitonga proxy"
             connectedProfile = null
             Log.e(TAG, "Failed to start tz-kitonga proxy: $error")
             Result.failure(Exception(error))
         }
     }
+
+    /**
+     * Build the [TunnelAdapterConfig.Slipstream] for [tunnelAdapter]. Static
+     * fields (domain, congestion control, keep-alive, GSO) and the resolver
+     * list come from [TunnelConfigMapper]; the listen address and the debug-log
+     * flag are runtime values supplied here.
+     */
+    private fun buildSlipstreamConfig(
+        profile: ServerProfile,
+        debugLogging: Boolean,
+        listenPort: Int,
+        listenHost: String,
+        resolvers: List<DnsResolver>
+    ): TunnelAdapterConfig.Slipstream = tunnelConfigMapper.map(
+        TunnelType.SLIPSTREAM,
+        profile,
+        TunnelRuntimeDefaults(
+            listenPort = listenPort,
+            listenHost = listenHost,
+            resolvers = resolvers,
+            debugLogging = debugLogging
+        )
+    ) as TunnelAdapterConfig.Slipstream
 
     /**
      * Start the DNSTT SOCKS5 proxy. Call this AFTER establishing the VPN interface.

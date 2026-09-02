@@ -63,10 +63,11 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startVaydnsProxy` now builds a `TunnelAdapterConfig.Vaydns` (static fields from `TunnelConfigMapper`; runtime DNS-address/auto-tuned qname+rps copied in; `maxPayload=0`) and calls `tunnelAdapter.start(config)` → `BridgeTunnelLifecycleBackend` → `VaydnsBridge.startClient`. `VpnTzService.connectVaydns` orchestration unchanged.
 
 ### slipstream (tz-kitonga)
-- Android adapter: `SlipstreamBridge` + `SlipstreamSocksBridge`
+- Android adapter: `SlipstreamBridge` + `SlipstreamSocksBridge` (JNI `loadLibrary("slipstream")`)
 - Native: Rust `slipstream-rust`/`slipstream-rust-plus`, socket fd via `NativeSocket`
-- Entry point: `VpnRepositoryImpl.startSlipstreamProxy` / `startSlipstreamSocksBridge`; caller: `VpnTzService.connectSlipstream` (~L1286); `connectSlipstreamSsh`
-- Migration status: **not migrated**
+- Entry point: `VpnRepositoryImpl.startSlipstreamProxy` → `SlipstreamBridge.startClient`; caller: `VpnTzService.connectSlipstream` (~L1286); `connectSlipstreamSsh`
+- Adapter: added `TunnelAdapterConfig.Slipstream` fields (congestionControl, keepAliveInterval, gsoEnabled, idlePollIntervalMs, idleTimeoutMs) + `Sni`-free; `SlipstreamBridgeArgs` (pure config→bridge-args incl. `ResolverConfig` dedup); a `TunnelAdapterConfig.Slipstream` branch in `BridgeTunnelLifecycleBackend` (`startSlipstream`).
+- Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startSlipstreamProxy` now builds a `TunnelAdapterConfig.Slipstream` (static fields from `TunnelConfigMapper`; listen address + debug-log flag runtime) and calls `tunnelAdapter.start(config)` → `BridgeTunnelLifecycleBackend` → `SlipstreamBridge.startClient`. `VpnTzService.connectSlipstream` orchestration unchanged; the legacy `startSlipstreamClient` helper is still used by a separate direct-start path and was left in place. Rust `.so` not rebuilt (see `PHASE5_NATIVE_BUILD.md`).
 
 ### naive
 - Android adapter: `NaiveBridge` + `NaiveSocksBridge`

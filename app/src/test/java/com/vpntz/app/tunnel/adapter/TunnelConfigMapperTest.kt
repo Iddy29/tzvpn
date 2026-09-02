@@ -147,6 +147,22 @@ class TunnelConfigMapperTest {
     }
 
     @Test
+    fun `slipstream maps congestion gso and idles and rejects blank domain`() {
+        val p = profile(TunnelType.SLIPSTREAM, domain = "s.example.com")
+            .copy(congestionControl = com.vpntz.app.domain.model.CongestionControl.DCUBIC, keepAliveInterval = 7000, gsoEnabled = true)
+        val cfg = mapper.map(TunnelType.SLIPSTREAM, p, runtime.copy(debugLogging = true)) as TunnelAdapterConfig.Slipstream
+        assertEquals("dcubic", cfg.congestionControl)
+        assertEquals(7000, cfg.keepAliveInterval)
+        assertTrue(cfg.gsoEnabled)
+        assertTrue(cfg.debugLogging)
+        assertEquals(10000, cfg.idlePollIntervalMs)
+        assertEquals(120000, cfg.idleTimeoutMs)
+        assertThrows(IllegalArgumentException::class.java) {
+            mapper.map(TunnelType.SLIPSTREAM, profile(TunnelType.SLIPSTREAM, domain = ""), runtime)
+        }
+    }
+
+    @Test
     fun `slipstream rejects blank domain`() {
         val p = profile(TunnelType.SLIPSTREAM, domain = "")
         assertThrows(IllegalArgumentException::class.java) { mapper.map(TunnelType.SLIPSTREAM, p, runtime) }

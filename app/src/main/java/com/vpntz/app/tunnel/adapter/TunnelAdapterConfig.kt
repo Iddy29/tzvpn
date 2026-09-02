@@ -4,6 +4,10 @@ import com.vpntz.app.domain.model.DnsResolver
 import com.vpntz.app.domain.model.ServerProfile
 import com.vpntz.app.domain.model.TunnelType
 
+/** Slipstream client idle-poll / idle-timeout defaults (ms), matching `VpnRepositoryImpl`. */
+private const val DEFAULT_SLIPSTREAM_IDLE_POLL_MS = 10_000
+private const val DEFAULT_SLIPSTREAM_IDLE_TIMEOUT_MS = 120_000
+
 /**
  * Typed, protocol-specific configuration handed to a [TunnelAdapter].
  *
@@ -60,7 +64,12 @@ sealed class TunnelAdapterConfig {
         val resolvers: List<DnsResolver>,
         val listenPort: Int,
         val listenHost: String,
-        val debugLogging: Boolean
+        val congestionControl: String,
+        val keepAliveInterval: Int,
+        val gsoEnabled: Boolean,
+        val debugLogging: Boolean,
+        val idlePollIntervalMs: Int,
+        val idleTimeoutMs: Int
     ) : TunnelAdapterConfig()
 
     data class Naive(
@@ -233,7 +242,12 @@ class TunnelConfigMapper {
             resolvers = runtime.resolvers.ifEmpty { profile.resolvers },
             listenPort = runtime.listenPort,
             listenHost = runtime.listenHost,
-            debugLogging = runtime.debugLogging
+            congestionControl = profile.congestionControl.value,
+            keepAliveInterval = profile.keepAliveInterval,
+            gsoEnabled = profile.gsoEnabled,
+            debugLogging = runtime.debugLogging,
+            idlePollIntervalMs = DEFAULT_SLIPSTREAM_IDLE_POLL_MS,
+            idleTimeoutMs = DEFAULT_SLIPSTREAM_IDLE_TIMEOUT_MS
         )
     }
 
