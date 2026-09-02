@@ -1,5 +1,6 @@
 package com.vpntz.app.tunnel
 
+import com.vpntz.app.network.TlsPacketFragmenter
 import com.vpntz.app.util.AppLog as Log
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -37,8 +38,6 @@ class SniFragmentForwarder(private val instanceId: String = "default") {
         private const val BIND_RETRY_DELAY_MS = 200L
         private const val BUFFER_SIZE = 65536
         private const val TCP_CONNECT_TIMEOUT_MS = 30000
-        private const val MULTI_CHUNK_MIN = 16
-        private const val MULTI_CHUNK_MAX = 40
         // ByeDPI-style low TTL for the decoy packet in `fake` / `disorder` modes.
         // 8 is the commonly effective value: high enough to reach typical
         // ISP-edge DPI, low enough to die before the foreign server.
@@ -248,25 +247,19 @@ class SniFragmentForwarder(private val instanceId: String = "default") {
         val recordPayload = data.copyOfRange(5, data.size)
 
         // Determine split points on the handshake payload
-        val splitPoints = when (strategy) {
-            "sni_split" -> getSniSplitPoints(recordPayload)
-            "half" -> getHalfSplitPoints(recordPayload)
-            "multi" -> getMultiSplitPoints(recordPayload)
-            "micro" -> getMicroSplitPoints(recordPayload)
-            else -> getSniSplitPoints(recordPayload)
-        }
+        val splitPoints = TlsPacketFragmenter.computeSplitPoints(recordPayload, strategy, random)
 
         // Build separate TLS records for each fragment
         val fragments = mutableListOf<ByteArray>()
         var pos = 0
         for (splitAt in splitPoints) {
             if (splitAt > pos && splitAt <= recordPayload.size) {
-                fragments.add(buildTlsRecord(contentType, tlsVersionMajor, tlsVersionMinor, recordPayload, pos, splitAt - pos))
+                fragments.add(TlsPacketFragmenter.buildTlsRecord(contentType, tlsVersionMajor, tlsVersionMinor, recordPayload, pos, splitAt - pos))
                 pos = splitAt
             }
         }
         if (pos < recordPayload.size) {
-            fragments.add(buildTlsRecord(contentType, tlsVersionMajor, tlsVersionMinor, recordPayload, pos, recordPayload.size - pos))
+            fragments.add(TlsPacketFragmenter.buildTlsRecord(contentType, tlsVersionMajor, tlsVersionMinor, recordPayload, pos, recordPayload.size - pos))
         }
 
         logd("Sending ${fragments.size} TLS record fragments (strategy=$strategy)")
@@ -347,7 +340,7 @@ class SniFragmentForwarder(private val instanceId: String = "default") {
         }
         // Split at the SNI hostname if we can find it; otherwise halve.
         val payload = if (real.size > 5) real.copyOfRange(5, real.size) else ByteArray(0)
-        val sniOff = findSniHostnameOffset(payload)
+        val sniOff = TlsPacketFragmenter.findSniHostnameOffset(payload)
         val splitAt = if (sniOff in 1 until payload.size - 1) {
             // Map back to absolute offset (add TLS record header = 5)
             5 + sniOff + payload.size.coerceAtMost(4) / 2 // mid-SNI-ish
@@ -379,147 +372,8 @@ class SniFragmentForwarder(private val instanceId: String = "default") {
      * length so the record's byte-offsets stay identical). Returns null if
      * the SNI extension cannot be located.
      */
-    private fun buildFakeClientHello(real: ByteArray, decoy: String): ByteArray? {
-        if (real.size < 6) return null
-        val payload = real.copyOfRange(5, real.size)
-        val sniHostOff = findSniHostnameOffset(payload)
-        if (sniHostOff < 0) return null
-        val hostLen = if (sniHostOff >= 2) {
-            ((payload[sniHostOff - 2].toInt() and 0xFF) shl 8) or (payload[sniHostOff - 1].toInt() and 0xFF)
-        } else 0
-        if (hostLen <= 0 || sniHostOff + hostLen > payload.size) return null
-
-        val decoyBytes = decoy.toByteArray(Charsets.US_ASCII)
-        val replacement = ByteArray(hostLen) { ' '.code.toByte() }
-        val copyLen = minOf(decoyBytes.size, hostLen)
-        System.arraycopy(decoyBytes, 0, replacement, 0, copyLen)
-
-        val fake = real.copyOf()
-        // sniHostOff is the offset inside `payload`; in `fake` that's + 5.
-        System.arraycopy(replacement, 0, fake, 5 + sniHostOff, hostLen)
-        return fake
-    }
-
-    /**
-     * Build a valid TLS record wrapping a fragment of the handshake payload.
-     */
-    private fun buildTlsRecord(contentType: Byte, versionMajor: Byte, versionMinor: Byte,
-                                payload: ByteArray, offset: Int, length: Int): ByteArray {
-        val record = ByteArray(5 + length)
-        record[0] = contentType
-        record[1] = versionMajor
-        record[2] = versionMinor
-        record[3] = (length shr 8 and 0xFF).toByte()
-        record[4] = (length and 0xFF).toByte()
-        System.arraycopy(payload, offset, record, 5, length)
-        return record
-    }
-
-    // ── Split point calculators (offsets within handshake payload, excluding TLS header) ──
-
-    /**
-     * Split through the middle of the SNI hostname with a random offset.
-     * Also prepends a 1-byte first fragment to defeat DPI that only checks the first packet.
-     */
-    private fun getSniSplitPoints(payload: ByteArray): List<Int> {
-        val sniOffset = findSniHostnameOffset(payload)
-        if (sniOffset > 0 && sniOffset < payload.size - 1) {
-            val hostnameLen = if (sniOffset >= 2) {
-                ((payload[sniOffset - 2].toInt() and 0xFF) shl 8) or (payload[sniOffset - 1].toInt() and 0xFF)
-            } else 0
-            // Split at a random point within the hostname (not exactly the middle)
-            val mid = if (hostnameLen > 2) {
-                sniOffset + 1 + random.nextInt(hostnameLen - 1)
-            } else {
-                sniOffset + (payload.size - sniOffset) / 2
-            }
-            val splitPoint = mid.coerceIn(2, payload.size - 1)
-            logd("SNI split: 1-byte lead + split at $splitPoint (hostname at $sniOffset, len=$hostnameLen)")
-            // 1-byte first fragment + split at SNI
-            return listOf(1, splitPoint)
-        }
-        return getHalfSplitPoints(payload)
-    }
-
-    /**
-     * 1-byte first fragment + split the rest in half.
-     */
-    private fun getHalfSplitPoints(payload: ByteArray): List<Int> {
-        val mid = 1 + (payload.size - 1) / 2
-        return listOf(1, mid)
-    }
-
-    /**
-     * Split into random-sized chunks (16-40 bytes) for maximum fragmentation.
-     */
-    private fun getMultiSplitPoints(payload: ByteArray): List<Int> {
-        val points = mutableListOf<Int>()
-        // Always start with a 1-byte fragment
-        var pos = 1
-        points.add(pos)
-        while (pos < payload.size) {
-            val chunkSize = MULTI_CHUNK_MIN + random.nextInt(MULTI_CHUNK_MAX - MULTI_CHUNK_MIN + 1)
-            pos += chunkSize
-            if (pos < payload.size) {
-                points.add(pos)
-            }
-        }
-        return points
-    }
-
-    /**
-     * Micro-fragmentation: split into 1-byte chunks for maximum wire overhead.
-     * Each byte gets its own 5-byte TLS record header, expanding wire size ~6x.
-     * This makes every individual packet useless to DPI without reassembly.
-     */
-    private fun getMicroSplitPoints(payload: ByteArray): List<Int> {
-        return (1 until payload.size).toList()
-    }
-
-    /**
-     * Find the offset where the SNI hostname data begins in the handshake payload
-     * (payload excludes the 5-byte TLS record header).
-     */
-    private fun findSniHostnameOffset(payload: ByteArray): Int {
-        // Handshake header (4) + ClientHello fixed (2+32=34) + SessionID(1+)
-        if (payload.size < 39) return -1
-
-        var pos = 4 // Skip handshake header
-        pos += 2 // client version
-        pos += 32 // random
-
-        if (pos >= payload.size) return -1
-        val sessionIdLen = payload[pos].toInt() and 0xFF
-        pos += 1 + sessionIdLen
-
-        if (pos + 2 > payload.size) return -1
-        val cipherSuitesLen = ((payload[pos].toInt() and 0xFF) shl 8) or (payload[pos + 1].toInt() and 0xFF)
-        pos += 2 + cipherSuitesLen
-
-        if (pos + 1 > payload.size) return -1
-        val compMethodsLen = payload[pos].toInt() and 0xFF
-        pos += 1 + compMethodsLen
-
-        if (pos + 2 > payload.size) return -1
-        val extensionsLen = ((payload[pos].toInt() and 0xFF) shl 8) or (payload[pos + 1].toInt() and 0xFF)
-        pos += 2
-        val extensionsEnd = pos + extensionsLen
-
-        while (pos + 4 <= extensionsEnd && pos + 4 <= payload.size) {
-            val extType = ((payload[pos].toInt() and 0xFF) shl 8) or (payload[pos + 1].toInt() and 0xFF)
-            val extLen = ((payload[pos + 2].toInt() and 0xFF) shl 8) or (payload[pos + 3].toInt() and 0xFF)
-            pos += 4
-
-            if (extType == 0x0000 && extLen > 0) {
-                if (pos + 5 <= payload.size) {
-                    val hostnameStart = pos + 5
-                    if (hostnameStart < payload.size) return hostnameStart
-                }
-            }
-            pos += extLen
-        }
-        return -1
-    }
+    private fun buildFakeClientHello(real: ByteArray, decoy: String): ByteArray? =
+        TlsPacketFragmenter.buildFakeClientHello(real, decoy)
 
     private fun relay(client: Socket, remote: Socket) {
         val executor = Executors.newFixedThreadPool(2)
