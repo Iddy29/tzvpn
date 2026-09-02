@@ -9,6 +9,7 @@ import com.vpntz.app.domain.model.ConnectionState
 import com.vpntz.app.domain.model.DnsResolver
 import com.vpntz.app.domain.model.PingResult
 import com.vpntz.app.domain.model.ProfileChain
+import com.vpntz.app.BuildConfig
 import com.vpntz.app.domain.model.ServerProfile
 import com.vpntz.app.domain.model.TrafficStats
 import com.vpntz.app.domain.model.TunnelType
@@ -360,7 +361,7 @@ class MainViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(error = "This profile has expired")
             return
         }
-        if (!targetProfile.tunnelType.isAvailable()) {
+        if (!targetProfile.tunnelType.isAvailable(BuildConfig.INCLUDE_TOR, BuildConfig.INCLUDE_NAIVE)) {
             _uiState.value = _uiState.value.copy(
                 error = "${targetProfile.tunnelType.displayName} is not available in this edition"
             )

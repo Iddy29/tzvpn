@@ -1,6 +1,5 @@
 package com.vpntz.app.domain.repository
 
-import android.content.Context
 import com.vpntz.app.domain.model.DnsTransport
 import com.vpntz.app.domain.model.E2eTestResult
 import com.vpntz.app.domain.model.ResolverScanResult
@@ -36,19 +35,17 @@ interface ResolverScannerRepository {
 
     /**
      * Generate random IPs from a country's CIDR ranges
-     * @param context Android context to access assets
      * @param countryCode Country code (e.g. "ir", "cn", "ru")
      * @param count Number of random IPs to generate
      */
-    fun generateCountryRangeIps(context: Context, countryCode: String, count: Int): List<String>
+    fun generateCountryRangeIps(countryCode: String, count: Int): List<String>
 
     /**
-     * Load raw CIDR ranges for a country from assets
-     * @param context Android context to access assets
+     * Load raw CIDR ranges for a country from app-bundled geo data
      * @param countryCode Country code (e.g. "ir", "cn", "ru")
      * @return List of (startIpLong, endIpLong) pairs
      */
-    fun loadCountryCidrRanges(context: Context, countryCode: String): List<Pair<Long, Long>>
+    fun loadCountryCidrRanges(countryCode: String): List<Pair<Long, Long>>
 
     /**
      * Generate random IPs from provided CIDR ranges

@@ -17,6 +17,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.PowerManager
+import com.vpntz.app.BuildConfig
 import com.vpntz.app.util.AppLog as Log
 import com.vpntz.app.data.local.datastore.PreferencesDataStore
 import com.vpntz.app.data.local.datastore.SplitTunnelingMode
@@ -524,7 +525,7 @@ class VpnTzService : VpnService() {
                 Log.i(TAG, "Remote DNS: $remoteDns (fallback: $remoteDnsFallback)")
 
                 // Check if tunnel type is available in this build flavor
-                if (!currentTunnelType.isAvailable()) {
+                if (!currentTunnelType.isAvailable(BuildConfig.INCLUDE_TOR, BuildConfig.INCLUDE_NAIVE)) {
                     handleTunnelFailure("${currentTunnelType.displayName} is not available in this edition")
                     return@launch
                 }

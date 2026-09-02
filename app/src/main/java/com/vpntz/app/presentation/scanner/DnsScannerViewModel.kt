@@ -1230,7 +1230,7 @@ class DnsScannerViewModel @Inject constructor(
     fun loadCountryCidrInfo() {
         val state = _uiState.value
         viewModelScope.launch(Dispatchers.Default) {
-            val ranges = scannerRepository.loadCountryCidrRanges(appContext, state.selectedCountry.code)
+            val ranges = scannerRepository.loadCountryCidrRanges(state.selectedCountry.code)
             val groups = ranges.groupBy { ((it.first shr 24) and 0xFF).toInt() }
                 .map { (octet, rangeList) ->
                     CidrGroup(
@@ -1279,7 +1279,7 @@ class DnsScannerViewModel @Inject constructor(
                         .filter { it.firstOctet in state.selectedOctets }
                         .flatMap { it.ranges }
                 } else {
-                    scannerRepository.loadCountryCidrRanges(appContext, state.selectedCountry.code)
+                    scannerRepository.loadCountryCidrRanges(state.selectedCountry.code)
                 }
 
                 if (selectedRanges.isEmpty()) {
@@ -1323,7 +1323,7 @@ class DnsScannerViewModel @Inject constructor(
 
     fun loadIrDnsCidrInfo() {
         viewModelScope.launch(Dispatchers.Default) {
-            val ranges = scannerRepository.loadCountryCidrRanges(appContext, "ir_dns")
+            val ranges = scannerRepository.loadCountryCidrRanges("ir_dns")
             val groups = ranges.groupBy { ((it.first shr 24) and 0xFF).toInt() }
                 .map { (octet, rangeList) ->
                     CidrGroup(
@@ -1355,7 +1355,7 @@ class DnsScannerViewModel @Inject constructor(
                         .filter { it.firstOctet in state.selectedOctets }
                         .flatMap { it.ranges }
                 } else {
-                    scannerRepository.loadCountryCidrRanges(appContext, "ir_dns")
+                    scannerRepository.loadCountryCidrRanges("ir_dns")
                 }
 
                 if (selectedRanges.isEmpty()) {
@@ -1399,7 +1399,7 @@ class DnsScannerViewModel @Inject constructor(
 
     fun loadIrDnsLiteCidrInfo() {
         viewModelScope.launch(Dispatchers.Default) {
-            val ranges = scannerRepository.loadCountryCidrRanges(appContext, "ir_dns_lite")
+            val ranges = scannerRepository.loadCountryCidrRanges("ir_dns_lite")
             // Group by first TWO octets for finer granularity (e.g. 2.188.x.x vs 2.189.x.x)
             val groups = ranges.groupBy {
                 val o1 = ((it.first shr 24) and 0xFF).toInt()
@@ -1438,7 +1438,7 @@ class DnsScannerViewModel @Inject constructor(
                         .filter { it.firstOctet in state.selectedOctets }
                         .flatMap { it.ranges }
                 } else {
-                    scannerRepository.loadCountryCidrRanges(appContext, "ir_dns_lite")
+                    scannerRepository.loadCountryCidrRanges("ir_dns_lite")
                 }
 
                 if (selectedRanges.isEmpty()) {

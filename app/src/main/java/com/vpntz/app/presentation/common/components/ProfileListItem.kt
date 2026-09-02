@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.vpntz.app.BuildConfig
 import com.vpntz.app.domain.model.PingResult
 import com.vpntz.app.domain.model.ServerProfile
 import com.vpntz.app.domain.model.TunnelType
@@ -156,7 +157,7 @@ fun ProfileListItem(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
-                    if (!profile.tunnelType.isAvailable()) {
+                    if (!profile.tunnelType.isAvailable(BuildConfig.INCLUDE_TOR, BuildConfig.INCLUDE_NAIVE)) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Not available in Lite",

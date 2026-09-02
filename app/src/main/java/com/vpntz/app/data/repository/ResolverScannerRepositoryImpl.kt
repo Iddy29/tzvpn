@@ -643,7 +643,6 @@ class ResolverScannerRepositoryImpl @Inject constructor(
     }
 
     override fun loadCountryCidrRanges(
-        context: android.content.Context,
         countryCode: String
     ): List<Pair<Long, Long>> {
         return loadCidrRanges(context, countryCode)
@@ -686,7 +685,6 @@ class ResolverScannerRepositoryImpl @Inject constructor(
     }
 
     override fun generateCountryRangeIps(
-        context: android.content.Context,
         countryCode: String,
         count: Int
     ): List<String> {

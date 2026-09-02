@@ -1,7 +1,5 @@
 package com.vpntz.app.domain.model
 
-import com.vpntz.app.BuildConfig
-
 data class ServerProfile(
     val id: Long = 0,
     val name: String,
@@ -218,9 +216,14 @@ enum class TunnelType(val value: String, val displayName: String) {
     }
 }
 
-fun TunnelType.isAvailable(): Boolean = when (this) {
-    TunnelType.SNOWFLAKE -> BuildConfig.INCLUDE_TOR
-    TunnelType.NAIVE, TunnelType.NAIVE_SSH -> BuildConfig.INCLUDE_NAIVE
+/**
+ * Whether the tunnel type is available in the current build edition.
+ * Feature flags are supplied by the caller (per-flavor BuildConfig) so the
+ * domain layer stays free of Android-generated classes.
+ */
+fun TunnelType.isAvailable(includeTor: Boolean, includeNaive: Boolean): Boolean = when (this) {
+    TunnelType.SNOWFLAKE -> includeTor
+    TunnelType.NAIVE, TunnelType.NAIVE_SSH -> includeNaive
     else -> true
 }
 
