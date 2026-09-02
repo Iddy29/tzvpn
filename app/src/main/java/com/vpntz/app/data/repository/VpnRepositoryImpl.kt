@@ -538,25 +538,16 @@ class VpnRepositoryImpl @Inject constructor(
             tunedRps = r.rpsLimit
         }
 
-        val result = VaydnsBridge.startClient(
+        val adapterConfig = buildVaydnsConfig(
+            profile = profile,
             dnsServer = dnsServer,
-            tunnelDomain = profile.domain,
-            publicKey = profile.dnsttPublicKey,
-            listenPort = proxyPort,
-            listenHost = proxyHost,
-            dnsttCompat = profile.vaydnsDnsttCompat,
-            maxPayload = 0,
-            recordType = profile.vaydnsRecordType,
-            maxQnameLen = tunedQname,
-            rps = tunedRps,
-            idleTimeout = profile.vaydnsIdleTimeout,
-            keepalive = profile.vaydnsKeepalive,
-            udpTimeout = profile.vaydnsUdpTimeout,
-            maxNumLabels = profile.vaydnsMaxNumLabels,
-            clientIdSize = profile.vaydnsClientIdSize,
-            resolverMode = profile.resolverMode.value,
-            rrSpreadCount = profile.rrSpreadCount
+            tunedQname = tunedQname,
+            tunedRps = tunedRps,
+            proxyPort = proxyPort,
+            proxyHost = proxyHost,
+            effectiveResolvers = effectiveOverride
         )
+        val result = tunnelAdapter.start(adapterConfig)
 
         if (result.isSuccess) {
             Log.i(TAG, "VayDNS SOCKS5 proxy started successfully")
@@ -568,6 +559,38 @@ class VpnRepositoryImpl @Inject constructor(
             Log.e(TAG, "Failed to start VayDNS proxy: $error")
             Result.failure(Exception(error))
         }
+    }
+
+    /**
+     * Build the [TunnelAdapterConfig.Vaydns] for [tunnelAdapter]. Static fields
+     * come from [TunnelConfigMapper]; the transport-aware DNS address and the
+     * auto-tuned QNAME/RPS are runtime values computed by [startVaydnsProxy] and
+     * copied in here so the mapper stays pure. VayDNS always uses `maxPayload = 0`.
+     */
+    private fun buildVaydnsConfig(
+        profile: ServerProfile,
+        dnsServer: String,
+        tunedQname: Int,
+        tunedRps: Double,
+        proxyPort: Int,
+        proxyHost: String,
+        effectiveResolvers: List<DnsResolver>?
+    ): TunnelAdapterConfig.Vaydns {
+        val base = tunnelConfigMapper.map(
+            TunnelType.VAYDNS,
+            profile,
+            TunnelRuntimeDefaults(
+                listenPort = proxyPort,
+                listenHost = proxyHost,
+                resolvers = effectiveResolvers ?: emptyList()
+            )
+        ) as TunnelAdapterConfig.Vaydns
+        return base.copy(
+            effectiveDnsServer = dnsServer,
+            maxPayload = 0,
+            maxQnameLen = tunedQname,
+            rps = tunedRps
+        )
     }
 
     /**

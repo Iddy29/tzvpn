@@ -139,6 +139,14 @@ class TunnelConfigMapperTest {
     }
 
     @Test
+    fun `vaydns rejects blank public key and blank domain`() {
+        val noKey = profile(TunnelType.VAYDNS, domain = "v.example.com", pubKey = "")
+        assertThrows(IllegalArgumentException::class.java) { mapper.map(TunnelType.VAYDNS, noKey, runtime) }
+        val noDomain = profile(TunnelType.VAYDNS, domain = "", pubKey = "k")
+        assertThrows(IllegalArgumentException::class.java) { mapper.map(TunnelType.VAYDNS, noDomain, runtime) }
+    }
+
+    @Test
     fun `slipstream rejects blank domain`() {
         val p = profile(TunnelType.SLIPSTREAM, domain = "")
         assertThrows(IllegalArgumentException::class.java) { mapper.map(TunnelType.SLIPSTREAM, p, runtime) }

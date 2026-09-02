@@ -38,6 +38,7 @@ sealed class TunnelAdapterConfig {
         val domain: String,
         val publicKey: String,
         val resolvers: List<DnsResolver>,
+        val effectiveDnsServer: String,
         val listenPort: Int,
         val listenHost: String,
         val maxPayload: Int,
@@ -200,10 +201,14 @@ class TunnelConfigMapper {
     private fun vaydns(profile: ServerProfile, runtime: TunnelRuntimeDefaults): TunnelAdapterConfig.Vaydns {
         require(profile.domain.isNotBlank()) { "VayDNS tunnel domain is required" }
         require(profile.dnsttPublicKey.isNotBlank()) { "VayDNS public key is required" }
+        val resolvers = runtime.resolvers.ifEmpty { profile.resolvers }
         return TunnelAdapterConfig.Vaydns(
             domain = profile.domain,
             publicKey = profile.dnsttPublicKey,
-            resolvers = runtime.resolvers.ifEmpty { profile.resolvers },
+            resolvers = resolvers,
+            // Leaf default (UDP host:port). The runtime layer replaces this with
+            // the transport-aware formatted address (DoH/DoT/TCP + preflight).
+            effectiveDnsServer = resolvers.joinToString(",") { "${it.host}:${it.port}" }.ifBlank { "8.8.8.8:53" },
             listenPort = runtime.listenPort,
             listenHost = runtime.listenHost,
             maxPayload = profile.dnsPayloadSize,

@@ -59,7 +59,8 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Native: gomobile `golibs-full.aar`
 - Entry point: `VpnRepositoryImpl.startVaydnsProxy` → `VaydnsBridge.startClient`
 - Caller: `VpnTzService.connectVaydns` (~L2496)
-- Migration status: **not migrated**
+- Adapter: added `TunnelAdapterConfig.Vaydns` (with `effectiveDnsServer`), `VaydnsBridgeArgs` (pure config→bridge-args), and a `TunnelAdapterConfig.Vaydns` branch in `BridgeTunnelLifecycleBackend` (`startVaydns`); health/stop/cleanup now dispatch on the active config.
+- Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startVaydnsProxy` now builds a `TunnelAdapterConfig.Vaydns` (static fields from `TunnelConfigMapper`; runtime DNS-address/auto-tuned qname+rps copied in; `maxPayload=0`) and calls `tunnelAdapter.start(config)` → `BridgeTunnelLifecycleBackend` → `VaydnsBridge.startClient`. `VpnTzService.connectVaydns` orchestration unchanged.
 
 ### slipstream (tz-kitonga)
 - Android adapter: `SlipstreamBridge` + `SlipstreamSocksBridge`
