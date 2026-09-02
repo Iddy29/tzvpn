@@ -10,6 +10,7 @@ import com.vpntz.app.tunnel.VlessBridge
 import com.vpntz.app.tunnel.VlessRealityBridge
 import com.vpntz.app.tunnel.SshTunnelBridge
 import com.vpntz.app.tunnel.DohBridge
+import com.vpntz.app.tunnel.Hysteria2Bridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -43,6 +44,7 @@ class BridgeTunnelLifecycleBackend(
             is TunnelAdapterConfig.Snowflake -> startSnowflake(config)
             is TunnelAdapterConfig.Ssh -> startSsh(config)
             is TunnelAdapterConfig.Doh -> startDoh(config)
+            is TunnelAdapterConfig.Hysteria2 -> startHysteria2(config)
             else -> Result.failure(UnsupportedOperationException(
                 "No bridge backend wired for ${config::class.simpleName}"
             ))
@@ -244,6 +246,22 @@ class BridgeTunnelLifecycleBackend(
             )
         }
 
+    private suspend fun startHysteria2(config: TunnelAdapterConfig.Hysteria2): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val a = Hysteria2BridgeArgs.resolve(config)
+            Hysteria2Bridge.start(
+                listenPort = a.listenPort,
+                listenHost = a.listenHost,
+                serverHost = a.serverHost,
+                serverPort = a.serverPort,
+                password = a.password,
+                sni = a.sni,
+                insecure = a.insecure,
+                obfs = a.obfs,
+                obfsPassword = a.obfsPassword
+            )
+        }
+
     override fun stop() {
         when (val c = active) {
             is TunnelAdapterConfig.Vaydns -> VaydnsBridge.stopClient()
@@ -254,6 +272,7 @@ class BridgeTunnelLifecycleBackend(
             is TunnelAdapterConfig.Snowflake -> SnowflakeBridge.stopClient()
             is TunnelAdapterConfig.Ssh -> SshTunnelBridge.stop()
             is TunnelAdapterConfig.Doh -> DohBridge.stop()
+            is TunnelAdapterConfig.Hysteria2 -> Hysteria2Bridge.stop()
             else -> Unit
         }
     }
@@ -267,6 +286,7 @@ class BridgeTunnelLifecycleBackend(
         is TunnelAdapterConfig.Snowflake -> SnowflakeBridge.isRunning()
         is TunnelAdapterConfig.Ssh -> SshTunnelBridge.isRunning()
         is TunnelAdapterConfig.Doh -> DohBridge.isRunning()
+        is TunnelAdapterConfig.Hysteria2 -> Hysteria2Bridge.isRunning()
         else -> false
     }
 
@@ -279,6 +299,7 @@ class BridgeTunnelLifecycleBackend(
         is TunnelAdapterConfig.Snowflake -> SnowflakeBridge.isClientHealthy()
         is TunnelAdapterConfig.Ssh -> SshTunnelBridge.isClientHealthy()
         is TunnelAdapterConfig.Doh -> DohBridge.isClientHealthy()
+        is TunnelAdapterConfig.Hysteria2 -> Hysteria2Bridge.isClientHealthy()
         else -> false
     }
 
@@ -307,6 +328,9 @@ class BridgeTunnelLifecycleBackend(
             }
             is TunnelAdapterConfig.Doh -> {
                 DohBridge.stop()
+            }
+            is TunnelAdapterConfig.Hysteria2 -> {
+                Hysteria2Bridge.stop()
             }
             else -> Unit
         }

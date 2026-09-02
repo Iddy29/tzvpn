@@ -120,6 +120,9 @@ class TunnelConfigMapperTest {
         assertTrue(cfg.insecure)
         assertEquals("salamander", cfg.obfs)
         assertEquals("op", cfg.obfsPassword)
+        assertThrows(IllegalArgumentException::class.java) {
+            mapper.map(TunnelType.HYSTERIA2, profile(TunnelType.HYSTERIA2, domain = ""), runtime)
+        }
     }
 
     @Test

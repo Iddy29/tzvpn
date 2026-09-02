@@ -105,11 +105,12 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Adapter: added `TunnelAdapterConfig.Doh` fields (localAuthUsername, localAuthPassword, upstreamSocksAddr) + `DohBridgeArgs` (pure config→args), a `TunnelAdapterConfig.Doh` branch in `BridgeTunnelLifecycleBackend` (`startDoh` → `DohBridge.start`).
 - Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startDohProxy` now builds a `TunnelAdapterConfig.Doh` (endpoint URL + listen from `TunnelConfigMapper`; local SOCKS auth + upstream SOCKS copied in) and calls `tunnelAdapter.start(config)` → `BridgeTunnelLifecycleBackend` → `DohBridge.start`. `VpnTzService.connectDoh` orchestration unchanged. Native artifact: none (OkHttp); TLS/cert validation is owned by `DohBridge` and is device/network verified.
 
-### hysteria2 / snowflake (extra, discovered)
-- Android adapters: `Hysteria2Bridge`, `TorSocksBridge`/snowflake
-- Native: gomobile `hysteria2-mobile`, snowflake
-- Callers: `VpnTzService.connectHysteria2`, `connectSnowflakeSmart`
-- Migration status: hysteria2 **not migrated**; snowflake is covered under the "### tor" row above.
+### hysteria2
+- Android adapter: `Hysteria2Bridge`
+- Native: gomobile `golibs-full.aar` (`hysteria2-mobile/hysteria2`, QUIC client)
+- Entry point: `Hysteria2Bridge.start(...)` — called from `VpnTzService.connectHysteria2` (~L3291, inside the service's chain engine).
+- Adapter: added `Hysteria2BridgeArgs` (pure config→args; `sni` falls back to server host), a `TunnelAdapterConfig.Hysteria2` branch in `BridgeTunnelLifecycleBackend` (`startHysteria2` → `Hysteria2Bridge.start`).
+- Migration status: **adapter wired; service wiring pending; device verification pending** — the config/args/backend exist and are JVM-tested, but the **`VpnTzService` Hysteria2 start was NOT rewired** to the adapter (it lives in the service chain engine and is left intact pending device verification). The gomobile AAR (`golibs-full.aar`) is prebuilt (not rebuilt here).
 
 ## Existing adapter-like abstractions already present
 
