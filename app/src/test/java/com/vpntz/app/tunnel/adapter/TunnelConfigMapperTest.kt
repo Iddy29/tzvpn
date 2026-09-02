@@ -131,6 +131,14 @@ class TunnelConfigMapperTest {
     }
 
     @Test
+    fun `noizdns rejects blank public key and blank domain`() {
+        val noKey = profile(TunnelType.NOIZDNS, domain = "t.example.com", pubKey = "")
+        assertThrows(IllegalArgumentException::class.java) { mapper.map(TunnelType.NOIZDNS, noKey, runtime) }
+        val noDomain = profile(TunnelType.NOIZDNS, domain = "", pubKey = "k")
+        assertThrows(IllegalArgumentException::class.java) { mapper.map(TunnelType.NOIZDNS, noDomain, runtime) }
+    }
+
+    @Test
     fun `slipstream rejects blank domain`() {
         val p = profile(TunnelType.SLIPSTREAM, domain = "")
         assertThrows(IllegalArgumentException::class.java) { mapper.map(TunnelType.SLIPSTREAM, p, runtime) }

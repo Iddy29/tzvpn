@@ -51,7 +51,8 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Android adapter: `DnsttBridge` (invoked with `noizMode=true`, `setDeviceManufacturer`, optional `setStealthMode`) + `DnsttSocksBridge`
 - Native: gomobile `mobile.DnsttClient` with noiz flags
 - Entry point: `VpnRepositoryImpl.startNoizdnsProxy`; caller: inside `VpnTzService.connectDnstt` (branch)
-- Migration status: **not migrated** (shares the DNSTT adapter path)
+- Adapter: reuses `BridgeTunnelLifecycleBackend` over `DnsttBridge` + `DnsttBridgeArgs` (same backend as DNSTT; differences are `noizdns=true` + `noizStealth` carried in the config)
+- Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startNoizdnsProxy` now builds a `TunnelAdapterConfig.Dnstt` (noizdns=true, noizStealth copied, runtime DNS-address/auto-tune copied in) and calls `tunnelAdapter.start(config)` → `BridgeTunnelLifecycleBackend` → `DnsttBridge.startClient(noizMode=true)`. `VpnTzService` orchestration unchanged.
 
 ### vaydns
 - Android adapter: `VaydnsBridge` (+ SOCKS bridge)

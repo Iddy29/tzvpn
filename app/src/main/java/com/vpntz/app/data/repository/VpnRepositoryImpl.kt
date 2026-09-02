@@ -389,10 +389,11 @@ class VpnRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Build the [TunnelAdapterConfig.Dnstt] for [tunnelAdapter]. Static fields
-     * come from [TunnelConfigMapper]; the transport-aware DNS address and the
-     * auto-tuned payload are runtime values computed by [startDnsttProxy] and
-     * copied in here so the mapper stays pure.
+     * Build the [TunnelAdapterConfig.Dnstt] shared by the DNSTT and NoizDNS
+     * proxy-start paths (both drive `DnsttBridge`). Static fields come from
+     * [TunnelConfigMapper]; the transport-aware DNS address and the auto-tuned
+     * payload are runtime values computed by the caller and copied in here so
+     * the mapper stays pure.
      */
     private fun buildDnsttConfig(
         profile: ServerProfile,
@@ -469,22 +470,20 @@ class VpnRepositoryImpl @Inject constructor(
             r.maxPayload
         } else profile.dnsPayloadSize
 
-        val result = DnsttBridge.startClient(
+        val adapterConfig = buildDnsttConfig(
+            profile = profile,
             dnsServer = dnsServer,
-            tunnelDomain = profile.domain,
-            publicKey = profile.dnsttPublicKey,
-            listenPort = proxyPort,
-            listenHost = proxyHost,
-            authoritativeMode = profile.dnsttAuthoritative,
-            noizMode = true,
-            stealthMode = profile.noizdnsStealth,
-            maxPayload = tunedNoizPayload,
+            tunedPayload = tunedNoizPayload,
+            proxyPort = proxyPort,
+            proxyHost = proxyHost,
+            effectiveResolvers = effectiveOverride,
+            noizdns = true,
+            noizStealth = profile.noizdnsStealth,
             socksProxyAddr = socksProxyAddr,
             socksProxyUser = socksProxyUser,
-            socksProxyPass = socksProxyPass,
-            resolverMode = profile.resolverMode.value,
-            rrSpreadCount = profile.rrSpreadCount
+            socksProxyPass = socksProxyPass
         )
+        val result = tunnelAdapter.start(adapterConfig)
 
         if (result.isSuccess) {
             Log.i(TAG, "NoizDNS SOCKS5 proxy started successfully")
