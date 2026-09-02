@@ -36,8 +36,10 @@ class VpnConnectionManager @Inject constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+    /** Canonical lifecycle state machine; the single source of truth for [connectionState]. */
+    private val stateMachine = VpnStateMachine()
+
+    val connectionState: StateFlow<ConnectionState> = stateMachine.state
 
     private val _dnsWarning = MutableStateFlow<String?>(null)
     val dnsWarning: StateFlow<String?> = _dnsWarning.asStateFlow()
@@ -54,13 +56,13 @@ class VpnConnectionManager @Inject constructor(
         // Observe VPN repository state
         scope.launch {
             vpnRepository.connectionState.collect { state ->
-                _connectionState.value = state
+                stateMachine.sync(state)
             }
         }
 
         // Push state changes to home screen widget
         scope.launch {
-            _connectionState.collect { state ->
+            connectionState.collect { state ->
                 VpnWidgetProvider.notifyStateChanged(context, state)
                 VpnWidgetCompactProvider.notifyStateChanged(context, state)
             }
@@ -72,22 +74,21 @@ class VpnConnectionManager @Inject constructor(
     }
 
     fun connect(profile: ServerProfile) {
-        if (_connectionState.value is ConnectionState.Connected ||
-            _connectionState.value is ConnectionState.Connecting) {
+        if (!stateMachine.canConnect()) {
             return
         }
 
         if (profile.isExpired) {
-            _connectionState.value = ConnectionState.Error("This profile has expired")
+            stateMachine.onError("This profile has expired")
             return
         }
         if (profile.boundDeviceId.isNotEmpty() && profile.boundDeviceId != getDeviceId()) {
-            _connectionState.value = ConnectionState.Error("This profile is bound to a different device")
+            stateMachine.onError("This profile is bound to a different device")
             return
         }
 
         pendingProfile = profile
-        _connectionState.value = ConnectionState.Connecting
+        stateMachine.beginConnect()
         _dnsWarning.value = null
 
         // Set active profile immediately so it shows on the main screen
@@ -105,16 +106,16 @@ class VpnConnectionManager @Inject constructor(
 
     fun reconnect(profile: ServerProfile) {
         if (profile.isExpired) {
-            _connectionState.value = ConnectionState.Error("This profile has expired")
+            stateMachine.onError("This profile has expired")
             return
         }
         if (profile.boundDeviceId.isNotEmpty() && profile.boundDeviceId != getDeviceId()) {
-            _connectionState.value = ConnectionState.Error("This profile is bound to a different device")
+            stateMachine.onError("This profile is bound to a different device")
             return
         }
 
         pendingProfile = profile
-        _connectionState.value = ConnectionState.Connecting
+        stateMachine.beginReconnect()
         _dnsWarning.value = null
 
         scope.launch {
@@ -131,14 +132,13 @@ class VpnConnectionManager @Inject constructor(
     }
 
     fun connectChain(chain: ProfileChain, firstProfile: ServerProfile) {
-        if (_connectionState.value is ConnectionState.Connected ||
-            _connectionState.value is ConnectionState.Connecting) {
+        if (!stateMachine.canConnect()) {
             return
         }
 
         pendingProfile = firstProfile
         pendingChain = chain
-        _connectionState.value = ConnectionState.Connecting
+        stateMachine.beginConnect()
         _dnsWarning.value = null
 
         val intent = Intent(context, VpnTzService::class.java).apply {
@@ -149,11 +149,11 @@ class VpnConnectionManager @Inject constructor(
     }
 
     fun disconnect() {
-        if (_connectionState.value is ConnectionState.Disconnected) {
+        if (!stateMachine.canDisconnect()) {
             return
         }
 
-        _connectionState.value = ConnectionState.Disconnecting
+        stateMachine.beginDisconnect()
 
         val intent = Intent(context, VpnTzService::class.java).apply {
             action = VpnTzService.ACTION_DISCONNECT
@@ -182,10 +182,10 @@ class VpnConnectionManager @Inject constructor(
         // any connect-time failure, and blanket-resetting here would replace a
         // useful error message with a blank "Not Connected" before the user
         // gets to read it.
-        val current = _connectionState.value
+        val current = stateMachine.state.value
         if (current !is ConnectionState.Error) {
+            stateMachine.onDisconnected()
             vpnRepository.updateConnectionState(ConnectionState.Disconnected)
-            _connectionState.value = ConnectionState.Disconnected
         }
         _dnsWarning.value = null
         pendingProfile = null
@@ -193,7 +193,7 @@ class VpnConnectionManager @Inject constructor(
 
     fun onVpnError(error: String) {
         scope.launch {
-            _connectionState.value = ConnectionState.Error(friendlyError(error))
+            stateMachine.onError(friendlyError(error))
         }
     }
 
