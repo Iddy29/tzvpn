@@ -48,3 +48,45 @@ adb install -r app/build/outputs/apk/full/debug/app-full-debug.apk
 ```
 
 Record a pass/fail line per protocol in `docs/provenance/REPLACEMENTS.md` when done.
+
+---
+
+## Execution log — 2026-09-02 14:45 UTC
+
+### Environment (verified, not assumed)
+- `adb devices -l` → `29201FDH200C5M device product:panther model:Pixel_7 device:panther` (one physical, authorized).
+- Model: **Google Pixel 7**; Android **16** (SDK/API **36**); ABI **arm64-v8a**; `/data` free **1.3 GB** (99% used).
+- Toolchain present: Go 1.25.10, `gomobile.exe` (`$HOME\go\bin`), Rust 1.98 with Android targets (aarch64/armv7/i686/x86_64), Android NDK **29.0.14206865**, Python 3.14 (`python`, no `python3`), Git Bash at `C:\Program Files\Git\bin\bash.exe`. `adb` is NOT on PATH but at `<SDK>\platform-tools\adb.exe`. `ANDROID_NDK_HOME` and `HOME` are unset in the shell.
+
+### Result: device verification BLOCKED — no installable APK
+The **Full and Lite debug APKs cannot be built**, so no app could be installed/tested on the phone.
+
+Attempted build:
+```bash
+$env:JAVA_HOME="C:\Program Files\Android\Android Studio\jbr"
+$env:HOME="C:\Users\mrcyber"
+gradlew :app:assembleFullDebug --offline
+```
+Result: **FAIL** at task `:app:verifyOpenSsl`:
+```
+OpenSSL for Android is not properly set up.
+Missing files in …\app\null\android-openssl\android-ssl: arm64-v8a/lib/libssl.a, libcrypto.a, include/openssl/ …
+Run './gradlew setupOpenSsl' …
+```
+Root cause: the slipstream Rust build (`cargoBuild`) `dependsOn("verifyOpenSsl")` and the Rust module lives in `src/main/rust`, so **both** flavors require Android OpenSSL static libs.
+
+Attempted setup:
+```bash
+gradlew setupOpenSsl
+```
+Result: **FAIL**. Primary download `https://github.com/…/v3.0.15/openssl-3.0.15-android.zip` returned **HTTP 404** (asset does not exist at that tag). The fallback invokes `scripts/build-openssl-android.sh`, which **does not exist in the repository**, and it also needs `bash` on PATH.
+
+Findings:
+- Network to GitHub:443 is reachable, but the documented release asset is 404.
+- No prebuilt OpenSSL-for-Android (`libssl.a`/`libcrypto.a` + `include/openssl/`) exists anywhere in the project or SDK.
+- The documented fallback build script is absent from the repo.
+
+### Consequence
+Because no debug APK could be produced, none of the 11 protocols could be installed or exercised on the device. Per protocol the status is **BLOCKED**, and the reason is a genuine missing prerequisite (Android OpenSSL for the native slipstream build) rather than a code failure. A secondary blocker for most protocols is that the repository ships **no valid server credentials/hosts** (DNSTT/VayDNS/Naive/VLESS/SSH/Hysteria2 need a reachable remote server; DoH needs a configured endpoint), so even with an APK, real connectivity is out of reach without importing user-supplied server configs.
+
+The native `.so`/AAR artifacts were **not** rebuilt, and on-device connectivity was **not** tested. Nothing here is claimed as PASS.

@@ -19,3 +19,14 @@ Intentional divergences (documented, non-breaking):
 
 Still on the derived path (NOT yet replaced — tracked for later phases):
 `data/local/*`, `datastore`, `service/*` (the `VpnStateMachine` connection orchestration is independent as of phase 4; `VpnTzService`'s Android/`VpnService` boundary and its per-protocol tunnel wiring remain derived), `tunnel/*` (tunnel lifecycle/relay/bridge classes remain, but the packet codecs and the TLS ClientHello fragmentation math are now canonical in `com.vpntz.app.network`), `presentation/*`, `di/*` (except the two new providers), Go `cli/`, Go `tzgate/` (business logic), `docs/USER_GUIDE.md`. Domain models/use-cases/repositories are independent as of phase 2 (`data/repository/*` implementations still consume the derived storage/tunnel layers until later phases).
+
+## Device verification note (2026-09-02)
+
+A Google Pixel 7 (Android 16 / API 36 / arm64-v8a) was connected and authorized.
+On-device verification was **BLOCKED**: no debug APK could be produced because the
+native slipstream Rust build requires Android OpenSSL and the documented setup is
+broken (primary OpenSSL download 404s; the `scripts/build-openssl-android.sh`
+fallback is missing). Both Full and Lite share the Rust module, so neither
+flavor assembles. No protocol is device-verified; no native artifact was rebuilt;
+no connectivity was tested. This must be resolved before any protocol can be
+marked device-verified.

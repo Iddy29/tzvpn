@@ -174,3 +174,18 @@ proxy/SOCKS/tun2socks knowledge or per-protocol config mapping.
 Combined, these leave Phase 5 to be the adapter extraction + per-protocol
 migration, which needs a device/emulator and the mobile build toolchain to do
 honestly.
+
+## Device verification attempt (2026-09-02)
+
+A physical **Google Pixel 7 (Android 16, API 36, arm64-v8a)** was connected via
+USB and authorized (`adb devices -l`). On-device verification could **not** be
+performed because **no debug APK can be built**: the native slipstream Rust
+build (`cargoBuild` `dependsOn("verifyOpenSsl")`) requires Android OpenSSL
+(`libssl.a`/`libcrypto.a` + headers), and the documented setup is broken
+(primary download 404s, the `scripts/build-openssl-android.sh` fallback file is
+missing from the repo). The Full and Lite variants both share this Rust module,
+so neither flavor assembles. See `PHASE5_DEVICE_SMOKE.md` "Execution log".
+
+Per-protocol device status is therefore **BLOCKED** (missing prerequisite) for
+all protocols; additionally the repo ships no real server credentials/hosts.
+No native artifact was rebuilt and no connectivity was tested. No PASS claimed.
