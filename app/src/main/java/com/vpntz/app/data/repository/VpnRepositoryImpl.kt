@@ -65,7 +65,7 @@ class VpnRepositoryImpl @Inject constructor(
     // transport-aware DNS formatting, connect-time auto-tune) stays here and is
     // fed into the config before the backend starts the bridge.
     private val tunnelConfigMapper = TunnelConfigMapper()
-    private val tunnelAdapter: TunnelLifecycleBackend = BridgeTunnelLifecycleBackend()
+    private val tunnelAdapter: TunnelLifecycleBackend = BridgeTunnelLifecycleBackend(context)
 
     companion object {
         private const val TAG = "VpnRepositoryImpl"

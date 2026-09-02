@@ -1,6 +1,8 @@
 package com.vpntz.app.tunnel.adapter
 
+import android.content.Context
 import com.vpntz.app.tunnel.DnsttBridge
+import com.vpntz.app.tunnel.NaiveBridge
 import com.vpntz.app.tunnel.SlipstreamBridge
 import com.vpntz.app.tunnel.VaydnsBridge
 import kotlinx.coroutines.Dispatchers
@@ -9,16 +11,19 @@ import kotlinx.coroutines.withContext
 /**
  * Production [TunnelLifecycleBackend] that wires the existing per-protocol
  * bridges. Supports the dns-tunnel family: DNSTT/NoizDNS via `DnsttBridge`,
- * VayDNS via `VaydnsBridge`, and Slipstream (tz-kitonga) via `SlipstreamBridge`
- * (Rust/JNI). Other config types are rejected until their backends are wired in.
+ * VayDNS via `VaydnsBridge`, Slipstream (tz-kitonga) via `SlipstreamBridge`
+ * (Rust/JNI), and Naive via `NaiveBridge` (external `libnaive.so` process).
+ * Other config types are rejected until their backends are wired in.
  *
  * Health/stop/cleanup dispatch on the config that was last started, so a single
  * backend instance correctly targets the active protocol. The actual bridge
  * calls are the only Android/native-touching part and are exercised on device;
- * the args translation lives in [DnsttBridgeArgs]/[VaydnsBridgeArgs]/[SlipstreamBridgeArgs]
+ * the args translation lives in [DnsttBridgeArgs]/[VaydnsBridgeArgs]/[SlipstreamBridgeArgs]/[NaiveBridgeArgs]
  * and is JVM-tested.
  */
-class BridgeTunnelLifecycleBackend : TunnelLifecycleBackend {
+class BridgeTunnelLifecycleBackend(
+    private val context: Context? = null
+) : TunnelLifecycleBackend {
 
     @Volatile private var active: TunnelAdapterConfig? = null
 
@@ -28,6 +33,7 @@ class BridgeTunnelLifecycleBackend : TunnelLifecycleBackend {
             is TunnelAdapterConfig.Dnstt -> startDnstt(config)
             is TunnelAdapterConfig.Vaydns -> startVaydns(config)
             is TunnelAdapterConfig.Slipstream -> startSlipstream(config)
+            is TunnelAdapterConfig.Naive -> startNaive(config)
             else -> Result.failure(UnsupportedOperationException(
                 "No bridge backend wired for ${config::class.simpleName}"
             ))
@@ -97,11 +103,31 @@ class BridgeTunnelLifecycleBackend : TunnelLifecycleBackend {
             )
         }
 
+    private suspend fun startNaive(config: TunnelAdapterConfig.Naive): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val ctx = context
+            if (ctx == null) {
+                Result.failure(IllegalStateException("Naive bridge requires an Android Context"))
+            } else {
+                val a = NaiveBridgeArgs.resolve(config)
+                NaiveBridge.start(
+                    context = ctx,
+                    listenPort = a.listenPort,
+                    listenHost = a.listenHost,
+                    serverHost = a.serverHost,
+                    serverPort = a.serverPort,
+                    username = a.username,
+                    password = a.password
+                )
+            }
+        }
+
     override fun stop() {
         when (active) {
             is TunnelAdapterConfig.Vaydns -> VaydnsBridge.stopClient()
             is TunnelAdapterConfig.Dnstt -> DnsttBridge.stopClient()
             is TunnelAdapterConfig.Slipstream -> SlipstreamBridge.stopClient()
+            is TunnelAdapterConfig.Naive -> NaiveBridge.stop()
             else -> Unit
         }
     }
@@ -110,6 +136,7 @@ class BridgeTunnelLifecycleBackend : TunnelLifecycleBackend {
         is TunnelAdapterConfig.Vaydns -> VaydnsBridge.isRunning()
         is TunnelAdapterConfig.Dnstt -> DnsttBridge.isRunning()
         is TunnelAdapterConfig.Slipstream -> SlipstreamBridge.isNativeRunning()
+        is TunnelAdapterConfig.Naive -> NaiveBridge.isRunning()
         else -> false
     }
 
@@ -117,6 +144,7 @@ class BridgeTunnelLifecycleBackend : TunnelLifecycleBackend {
         is TunnelAdapterConfig.Vaydns -> VaydnsBridge.isClientHealthy()
         is TunnelAdapterConfig.Dnstt -> DnsttBridge.isClientHealthy()
         is TunnelAdapterConfig.Slipstream -> SlipstreamBridge.isClientHealthy()
+        is TunnelAdapterConfig.Naive -> NaiveBridge.isClientHealthy()
         else -> false
     }
 
@@ -132,6 +160,9 @@ class BridgeTunnelLifecycleBackend : TunnelLifecycleBackend {
             is TunnelAdapterConfig.Slipstream -> {
                 SlipstreamBridge.setVpnService(null)
                 SlipstreamBridge.stopClient()
+            }
+            is TunnelAdapterConfig.Naive -> {
+                NaiveBridge.stop()
             }
             else -> Unit
         }

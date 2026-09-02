@@ -70,10 +70,11 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startSlipstreamProxy` now builds a `TunnelAdapterConfig.Slipstream` (static fields from `TunnelConfigMapper`; listen address + debug-log flag runtime) and calls `tunnelAdapter.start(config)` → `BridgeTunnelLifecycleBackend` → `SlipstreamBridge.startClient`. `VpnTzService.connectSlipstream` orchestration unchanged; the legacy `startSlipstreamClient` helper is still used by a separate direct-start path and was left in place. Rust `.so` not rebuilt (see `PHASE5_NATIVE_BUILD.md`).
 
 ### naive
-- Android adapter: `NaiveBridge` + `NaiveSocksBridge`
-- Native: `libnaive.so`
-- Entry point: `VpnRepositoryImpl.startNaiveSocksBridge`; caller: `VpnTzService.connectNaive`
-- Migration status: **not migrated**
+- Android adapter: `NaiveBridge` (external `libnaive.so` process) + `NaiveSocksBridge`
+- Native: `libnaive.so` (Chromium-based NaiveProxy binary)
+- Entry point: `NaiveBridge.start(...)` is called directly inside `VpnTzService`'s chain engine (e.g. ~L1133/L1153); `VpnRepositoryImpl.startNaiveSocksBridge` starts the SOCKS bridge on top of it
+- Adapter: added `NaiveBridgeArgs` (pure config→bridge-args; Android `Context` excluded and injected by the backend), a `TunnelAdapterConfig.Naive` branch in `BridgeTunnelLifecycleBackend` (`startNaive` → `NaiveBridge.start`, with protocol-aware stop/isRunning/isHealthy/cleanup).
+- Migration status: **adapter wired; service wiring pending; device verification pending** — the `TunnelAdapterConfig.Naive` + `TunnelConfigMapper` + `NaiveBridgeArgs` + backend branch exist and are JVM-tested, but the **VpnTzService](chain-engine) Naive start was NOT rewired** to the adapter (it lives in the service and is left intact pending device verification). Runtime host-name pre-resolution and SOCKS-bridge setup remain in the existing code.
 
 ### vless
 - Android adapter: `VlessBridge` (+ `VlessRealityBridge`)

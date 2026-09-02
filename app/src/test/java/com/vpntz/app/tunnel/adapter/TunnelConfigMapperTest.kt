@@ -163,6 +163,20 @@ class TunnelConfigMapperTest {
     }
 
     @Test
+    fun `naive maps host port creds and rejects blank host`() {
+        val p = profile(TunnelType.NAIVE, domain = "n.example.com")
+            .copy(naivePort = 8443, naiveUsername = "u", naivePassword = "pw")
+        val cfg = mapper.map(TunnelType.NAIVE, p, runtime) as TunnelAdapterConfig.Naive
+        assertEquals("n.example.com", cfg.host)
+        assertEquals(8443, cfg.port)
+        assertEquals("u", cfg.username)
+        assertEquals("pw", cfg.password)
+        assertThrows(IllegalArgumentException::class.java) {
+            mapper.map(TunnelType.NAIVE, profile(TunnelType.NAIVE, domain = ""), runtime)
+        }
+    }
+
+    @Test
     fun `slipstream rejects blank domain`() {
         val p = profile(TunnelType.SLIPSTREAM, domain = "")
         assertThrows(IllegalArgumentException::class.java) { mapper.map(TunnelType.SLIPSTREAM, p, runtime) }
