@@ -84,10 +84,12 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Migration status: **adapter wired; service wiring pending; device verification pending** — the config/args/backend exist and are JVM-tested, but the **`VpnTzService` VLESS start was NOT rewired** to the adapter (it lives in the service chain engine and is left intact pending device verification). The gomobile AAR (`golibs-full.aar`) for the reality path is prebuilt (not rebuilt here).
 
 ### tor
-- Android adapter: `TorSocksBridge`
-- Native: `libtor.so` + `libobfs4proxy.so` + snowflake (WebRTC) gomobile
-- Entry point: `VpnRepositoryImpl.startSnowflakeProxy`; caller: `VpnTzService.connectSnowflake` / `connectSnowflakeSmart`
-- Migration status: **not migrated**
+- Protocol enum: `TunnelType.SNOWFLAKE` (the repository names the "Tor" tunnel type `SNOWFLAKE`; the implementation starts a Tor process plus a pluggable transport).
+- Android adapter: `SnowflakeBridge` (Snowflake PT Go client + Tor binary, or lyrebird/obfs4 PT) + `TorSocksBridge` (fronts Tor SOCKS to the bridge port). `SnowflakeBridge` lives in the `full` flavor; the `lite` flavor provides a stub.
+- Native: `libtor.so` + `libobfs4proxy.so` (lyrebird) + Snowflake WebRTC gomobile (`snowflake` from `golibs-full.aar`).
+- Entry point: `VpnRepositoryImpl.startSnowflakeProxy` (calls `SnowflakeBridge.startClient` then `TorSocksBridge.start`); caller: `VpnTzService.connectSnowflake` / `connectSnowflakeSmart`.
+- Adapter: added `TunnelAdapterConfig.Snowflake` fields (snowflakePtPort, torSocksPort, upstreamSocksAddr) + `SnowflakeBridgeArgs` (pure config→args); a `TunnelAdapterConfig.Snowflake` branch in `BridgeTunnelLifecycleBackend` (`startSnowflake` → `SnowflakeBridge.startClient`, with protocol-aware stop/isRunning/isHealthy/cleanup).
+- Migration status: **adapter wired; device verification pending** — `VpnRepositoryImpl.startSnowflakeProxy` now routes the `SnowflakeBridge.startClient` step through `tunnelAdapter.start(snowflakeConfig)` (TorSocksBridge + the rest of the stack unchanged). This status covers the Tor+Snowflake/obfs4 layer as wired to the adapter; device verification pending for the Tor/Snowflake/obfs4/native path.
 
 ### ssh
 - Android adapter: `SshTunnelBridge` + `SshTunnelInstance`
@@ -106,7 +108,7 @@ inside `VpnRepositoryImpl` (`startDnsttProxy`, `startVaydnsProxy`,
 - Android adapters: `Hysteria2Bridge`, `TorSocksBridge`/snowflake
 - Native: gomobile `hysteria2-mobile`, snowflake
 - Callers: `VpnTzService.connectHysteria2`, `connectSnowflakeSmart`
-- Migration status: **not migrated**
+- Migration status: hysteria2 **not migrated**; snowflake is covered under the "### tor" row above.
 
 ## Existing adapter-like abstractions already present
 

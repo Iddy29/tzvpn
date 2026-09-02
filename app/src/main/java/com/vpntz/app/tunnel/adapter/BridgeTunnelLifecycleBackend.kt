@@ -4,6 +4,7 @@ import android.content.Context
 import com.vpntz.app.tunnel.DnsttBridge
 import com.vpntz.app.tunnel.NaiveBridge
 import com.vpntz.app.tunnel.SlipstreamBridge
+import com.vpntz.app.tunnel.SnowflakeBridge
 import com.vpntz.app.tunnel.VaydnsBridge
 import com.vpntz.app.tunnel.VlessBridge
 import com.vpntz.app.tunnel.VlessRealityBridge
@@ -37,6 +38,7 @@ class BridgeTunnelLifecycleBackend(
             is TunnelAdapterConfig.Slipstream -> startSlipstream(config)
             is TunnelAdapterConfig.Naive -> startNaive(config)
             is TunnelAdapterConfig.Vless -> startVless(config)
+            is TunnelAdapterConfig.Snowflake -> startSnowflake(config)
             else -> Result.failure(UnsupportedOperationException(
                 "No bridge backend wired for ${config::class.simpleName}"
             ))
@@ -169,6 +171,24 @@ class BridgeTunnelLifecycleBackend(
     private fun isReality(config: TunnelAdapterConfig): Boolean =
         (config as? TunnelAdapterConfig.Vless)?.let { VlessBridgeArgs.isReality(it) } == true
 
+    private suspend fun startSnowflake(config: TunnelAdapterConfig.Snowflake): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            val ctx = context
+            if (ctx == null) {
+                Result.failure(IllegalStateException("Snowflake/Tor bridge requires an Android Context"))
+            } else {
+                val a = SnowflakeBridgeArgs.resolve(config)
+                SnowflakeBridge.startClient(
+                    context = ctx,
+                    snowflakePort = a.snowflakePort,
+                    torSocksPort = a.torSocksPort,
+                    listenHost = a.listenHost,
+                    bridgeLines = a.bridgeLines,
+                    upstreamSocksAddr = a.upstreamSocksAddr
+                )
+            }
+        }
+
     override fun stop() {
         when (val c = active) {
             is TunnelAdapterConfig.Vaydns -> VaydnsBridge.stopClient()
@@ -176,6 +196,7 @@ class BridgeTunnelLifecycleBackend(
             is TunnelAdapterConfig.Slipstream -> SlipstreamBridge.stopClient()
             is TunnelAdapterConfig.Naive -> NaiveBridge.stop()
             is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.stop() else VlessBridge.stop()
+            is TunnelAdapterConfig.Snowflake -> SnowflakeBridge.stopClient()
             else -> Unit
         }
     }
@@ -186,6 +207,7 @@ class BridgeTunnelLifecycleBackend(
         is TunnelAdapterConfig.Slipstream -> SlipstreamBridge.isNativeRunning()
         is TunnelAdapterConfig.Naive -> NaiveBridge.isRunning()
         is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.isRunning() else VlessBridge.isRunning()
+        is TunnelAdapterConfig.Snowflake -> SnowflakeBridge.isRunning()
         else -> false
     }
 
@@ -195,6 +217,7 @@ class BridgeTunnelLifecycleBackend(
         is TunnelAdapterConfig.Slipstream -> SlipstreamBridge.isClientHealthy()
         is TunnelAdapterConfig.Naive -> NaiveBridge.isClientHealthy()
         is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.isClientHealthy() else VlessBridge.isClientHealthy()
+        is TunnelAdapterConfig.Snowflake -> SnowflakeBridge.isClientHealthy()
         else -> false
     }
 
@@ -215,6 +238,9 @@ class BridgeTunnelLifecycleBackend(
                 NaiveBridge.stop()
             }
             is TunnelAdapterConfig.Vless -> if (VlessBridgeArgs.isReality(c)) VlessRealityBridge.stop() else VlessBridge.stop()
+            is TunnelAdapterConfig.Snowflake -> {
+                SnowflakeBridge.stopClient()
+            }
             else -> Unit
         }
     }

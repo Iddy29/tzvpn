@@ -960,14 +960,14 @@ class VpnRepositoryImpl @Inject constructor(
         val proxyHost = preferencesDataStore.proxyListenAddress.first()
 
         // Step 1: Start Snowflake PT + Tor (or other PT based on bridge lines)
-        val sfResult = SnowflakeBridge.startClient(
-            context = context,
-            snowflakePort = snowflakePtPort,
+        val sfConfig = buildSnowflakeConfig(
+            profile = profile,
+            proxyHost = proxyHost,
+            snowflakePtPort = snowflakePtPort,
             torSocksPort = torSocksPort,
-            listenHost = proxyHost,
-            bridgeLines = profile.torBridgeLines,
             upstreamSocksAddr = upstreamSocksAddr
         )
+        val sfResult = tunnelAdapter.start(sfConfig)
 
         if (sfResult.isFailure) {
             connectedProfile = null
@@ -998,6 +998,29 @@ class VpnRepositoryImpl @Inject constructor(
         currentTunnelType = TunnelType.SNOWFLAKE
         Log.i(TAG, "Snowflake proxy stack started successfully")
         Result.success(Unit)
+    }
+
+    /**
+     * Build the [TunnelAdapterConfig.Snowflake] for [tunnelAdapter]. Bridge lines
+     * come from the profile via [TunnelConfigMapper]; the Snowflake PT / Tor SOCKS
+     * ports and the optional upstream SOCKS address are runtime values supplied here.
+     */
+    private fun buildSnowflakeConfig(
+        profile: ServerProfile,
+        proxyHost: String,
+        snowflakePtPort: Int,
+        torSocksPort: Int,
+        upstreamSocksAddr: java.net.InetSocketAddress?
+    ): TunnelAdapterConfig.Snowflake = tunnelConfigMapper.map(
+        TunnelType.SNOWFLAKE,
+        profile,
+        TunnelRuntimeDefaults(listenPort = snowflakePtPort, listenHost = proxyHost)
+    ).let { base ->
+        (base as TunnelAdapterConfig.Snowflake).copy(
+            snowflakePtPort = snowflakePtPort,
+            torSocksPort = torSocksPort,
+            upstreamSocksAddr = upstreamSocksAddr
+        )
     }
 
     /**

@@ -147,7 +147,12 @@ sealed class TunnelAdapterConfig {
     data class Snowflake(
         val bridges: String,
         val listenPort: Int,
-        val listenHost: String
+        val listenHost: String,
+        // Runtime values supplied by the caller (Snowflake PT + Tor SOCKS ports,
+        // and an optional upstream SOCKS5 for chaining).
+        val snowflakePtPort: Int = 0,
+        val torSocksPort: Int = 0,
+        val upstreamSocksAddr: java.net.InetSocketAddress? = null
     ) : TunnelAdapterConfig()
 }
 
