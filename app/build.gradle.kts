@@ -177,6 +177,22 @@ tasks.register("setupOpenSsl") {
 
         println("OpenSSL for Android not found. Setting up...")
 
+        // Build OpenSSL from the official, checksum-verified source via the
+        // reproducible script. The passy/build-openssl-android prebuilt release
+        // this task previously downloaded is defunct, so we no longer depend on it.
+        val buildScript = file("$projectDir/scripts/build-openssl-android.sh")
+        if (buildScript.exists()) {
+            println("Building OpenSSL ${opensslVersion} from source: ${buildScript.name}")
+            exec {
+                commandLine("bash", buildScript.absolutePath)
+                environment("OPENSSL_VERSION", opensslVersion)
+                environment("OUTPUT_DIR", opensslBaseDir.absolutePath)
+                environment("ANDROID_NDK_HOME", android.ndkDirectory.absolutePath)
+            }
+            println("OpenSSL setup complete!")
+            return@doLast
+        }
+
         val downloadUrl = "https://github.com/passy/build-openssl-android/releases/download/v${opensslVersion}/openssl-${opensslVersion}-android.zip"
         val tempZip = file("${buildDir}/tmp/openssl-android.zip")
         val extractDir = file("${buildDir}/tmp/openssl-extract")
