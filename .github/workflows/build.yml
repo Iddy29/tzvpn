@@ -2,21 +2,39 @@ name: APK Build
 
 on:
   push:
+    branches:
+      - rewrite/independence
     tags:
       - 'v*'
   workflow_dispatch:
 
 env:
   OPENSSL_VERSION: "3.0.15"
+  NDK_VERSION: "29.0.14206865"
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            perl \
+            pkg-config \
+            unzip \
+            git \
+            curl \
+            python3
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -27,10 +45,37 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android NDK
+      - name: Install Android SDK packages
         run: |
-          sdkmanager --install "ndk;29.0.14206865"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> $GITHUB_ENV
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;${NDK_VERSION}"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}"
+          echo "ANDROID_HOME=$SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$SDK_ROOT/ndk/${NDK_VERSION}" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=$SDK_ROOT/ndk/${NDK_VERSION}" >> $GITHUB_ENV
+          echo "Using Android SDK at $SDK_ROOT"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: gomobile-build/go.mod
+          cache-dependency-path: gomobile-build/go.sum
+
+      - name: Install and initialize gomobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          "$(go env GOPATH)/bin/gomobile" init
 
       - name: Cache Rust/Cargo
         uses: actions/cache@v4
@@ -42,14 +87,6 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
-
-      - name: Install cargo-ndk
-        run: cargo install cargo-ndk --locked
 
       - name: Cache OpenSSL
         id: cache-openssl
@@ -64,7 +101,8 @@ jobs:
           chmod +x app/scripts/build-openssl-android.sh
           OUTPUT_DIR=$HOME/android-openssl/android-ssl \
           OPENSSL_VERSION=${{ env.OPENSSL_VERSION }} \
-          ./app/scripts/build-openssl-android.sh
+          ANDROID_NDK_HOME=$ANDROID_NDK_HOME \
+          bash app/scripts/build-openssl-android.sh
 
       - name: Verify OpenSSL installation
         run: |
@@ -72,19 +110,11 @@ jobs:
             for lib in libssl.a libcrypto.a; do
               test -f ~/android-openssl/android-ssl/$abi/lib/$lib || { echo "Missing $abi/lib/$lib"; exit 1; }
             done
+            test -d ~/android-openssl/android-ssl/$abi/include/openssl || { echo "Missing $abi/include/openssl"; exit 1; }
           done
           echo "OpenSSL verification passed"
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: gomobile-build/go.mod
-          cache-dependency-path: gomobile-build/go.sum
-
-      - name: Install gomobile
-        run: go install golang.org/x/mobile/cmd/gomobile@latest && gomobile init
-
-      - name: Build Go mobile libraries
+      - name: Build Go Android libraries
         working-directory: gomobile-build
         run: make build
 
@@ -133,17 +163,81 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "CONFIG_ENCRYPTION_KEY=$CONFIG_ENCRYPTION_KEY" >> local.properties
 
+      - name: Build Full Debug APK
+        run: ./gradlew :app:assembleFullDebug --no-daemon --stacktrace
+
+      - name: Verify libslipstream JNI symbols
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk/full/debug -name 'VPN-TZ-*-full-debug-universal.apk' | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(find app/build/outputs/apk/full/debug -name '*.apk' | head -1)
+          fi
+          if [ -z "$APK" ]; then
+            echo "No Full Debug APK produced"; exit 1
+          fi
+          echo "Inspecting $APK"
+          SO_ENTRY=$(unzip -l "$APK" | awk '{print $4}' | grep 'lib/.*/libslipstream.so' | head -1)
+          if [ -z "$SO_ENTRY" ]; then
+            echo "libslipstream.so missing from APK"; exit 1
+          fi
+          echo "Found $SO_ENTRY in APK"
+          WORK=$(mktemp -d)
+          unzip -o -j "$APK" "$SO_ENTRY" -d "$WORK" > /dev/null
+          SO="$WORK/libslipstream.so"
+          NM="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
+          SYMS=$("$NM" -D --defined-only "$SO")
+          FAIL=0
+          for fn in \
+            nativeStartSlipstreamClient \
+            nativeStopSlipstreamClient \
+            nativeIsClientRunning \
+            nativeIsQuicReady \
+            nativeGetLastError
+          do
+            EXPECTED="Java_com_vpntz_app_tunnel_SlipstreamBridge_${fn}"
+            if echo "$SYMS" | grep -q "$EXPECTED"; then
+              echo "OK  $EXPECTED"
+            else
+              echo "MISSING $EXPECTED"
+              FAIL=1
+            fi
+          done
+          rm -rf "$WORK"
+          if [ "$FAIL" -ne 0 ]; then
+            echo "JNI symbol mismatch — the native library does not match com.vpntz.app.tunnel.SlipstreamBridge"
+            exit 1
+          fi
+          echo "JNI symbol verification passed"
+
+      - name: Collect Full Debug APKs
+        run: |
+          mkdir -p debug-apks
+          cp app/build/outputs/apk/full/debug/VPN-TZ-*-full-debug-*.apk debug-apks/ 2>/dev/null || true
+          ls -la debug-apks/
+
+      - name: Upload Full Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-full-debug
+          path: debug-apks/*.apk
+          if-no-files-found: error
+          retention-days: 5
+
       - name: Build Full Release APK
-        run: ./gradlew assembleFullRelease --no-daemon
+        if: env.KEYSTORE_DECODED == 'true'
+        run: ./gradlew :app:assembleFullRelease --no-daemon
 
       - name: Build Lite Release APK
-        run: ./gradlew assembleLiteRelease --no-daemon
+        if: env.KEYSTORE_DECODED == 'true'
+        run: ./gradlew :app:assembleLiteRelease --no-daemon
 
       - name: Collect release APKs
         run: |
           mkdir -p release-apks
           cp app/build/outputs/apk/full/release/VPN-TZ-*-full-*.apk release-apks/ 2>/dev/null || true
           cp app/build/outputs/apk/lite/release/VPN-TZ-*-lite-*.apk release-apks/ 2>/dev/null || true
+          ls -la release-apks/
 
       - name: Upload Release APKs
         uses: actions/upload-artifact@v4
